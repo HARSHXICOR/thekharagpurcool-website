@@ -46,7 +46,7 @@ export class InquiriesListener {
       --------------------------------------------------
 
       Log in to your Client Console to manage this campaign:
-      http://localhost:3000/login
+      ${process.env.FRONTEND_ORIGIN || 'https://thekharagpurcool.vercel.app'}/login
 
       Best regards,
       The Kharagpur Wala BFF Engine
@@ -109,7 +109,7 @@ export class InquiriesListener {
       Our account manager will analyze your Instagram profile (${inquiry.instagramHandle || "N/A"}) and get back to you with custom campaign strategies and tailored pricing options within 24 hours.
 
       In the meantime, feel free to browse our latest regional fests, cafe reviews, and automobile case studies here:
-      http://localhost:3000/portfolio
+      ${process.env.FRONTEND_ORIGIN || 'https://thekharagpurcool.vercel.app'}/portfolio
 
       Best regards,
       The Kharagpur Wala Partnerships Team
