@@ -29,10 +29,15 @@ function parseDecimal(val: any): number {
       const parsed = parseFloat(val.toString());
       if (!isNaN(parsed)) return parsed;
     }
-    if (val.c && Array.isArray(val.c) && val.c.length > 0) {
-      const joinedDigits = val.c.join("");
-      const exponent = typeof val.e === "number" ? val.e : 0;
+    const digits = val.d || val.c;
+    if (digits && Array.isArray(digits) && digits.length > 0) {
       const sign = val.s === -1 ? -1 : 1;
+      // Single element digits array represents the exact integer value directly in decimal.js!
+      if (digits.length === 1) {
+        return parseFloat(digits[0]) * sign;
+      }
+      const joinedDigits = digits.join("");
+      const exponent = typeof val.e === "number" ? val.e : 0;
       const numVal = parseFloat(joinedDigits) / Math.pow(10, joinedDigits.length - 1 - exponent);
       return isNaN(numVal) ? 0 : numVal * sign;
     }
