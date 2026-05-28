@@ -317,7 +317,7 @@ export function Portfolio() {
                   <h3 className="text-2xl mb-4">{project.client}</h3>
 
                   {/* Metrics */}
-                  <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     <div className="glass-light rounded-xl p-4 text-center">
                       <Users size={20} className="mx-auto mb-2 text-purple-400" />
                       <div className="text-xs text-gray-500 mb-1">Followers</div>

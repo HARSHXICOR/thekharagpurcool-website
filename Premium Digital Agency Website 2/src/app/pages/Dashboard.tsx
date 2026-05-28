@@ -241,7 +241,7 @@ export function Dashboard() {
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full sm:w-auto justify-start sm:justify-end">
                 <button className="px-6 py-3 rounded-full glass-light hover:glass transition-all flex items-center gap-2">
                   <Calendar size={18} />
                   Last 30 Days

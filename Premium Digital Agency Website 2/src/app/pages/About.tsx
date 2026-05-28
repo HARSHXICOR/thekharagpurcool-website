@@ -197,15 +197,15 @@ export function About() {
           </motion.div>
 
           <div className="max-w-5xl mx-auto">
-            {/* Highlights Grid (Circles) */}
-            <div className="grid grid-cols-4 sm:grid-cols-8 gap-4 md:gap-6 mb-16">
+            {/* Highlights (Horizontally scrollable on mobile, grid on desktop) */}
+            <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-8 gap-4 md:gap-6 mb-16 pb-4 -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
               {highlights.map((hl, idx) => {
                 const isSelected = activeHighlight === idx;
                 return (
                   <button
                     key={idx}
                     onClick={() => setActiveHighlight(idx)}
-                    className="flex flex-col items-center gap-3 group focus:outline-none cursor-pointer"
+                    className="flex flex-col items-center gap-3 group focus:outline-none cursor-pointer flex-shrink-0"
                   >
                     {/* Story Circle */}
                     <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full p-[3px] transition-all duration-300 ${
@@ -377,7 +377,7 @@ export function About() {
 
           <div className="max-w-4xl mx-auto">
             <div className="relative">
-              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-purple-500 via-teal-500 to-yellow-500" />
+              <div className="absolute md:left-1/2 left-[15px] top-0 bottom-0 w-px bg-gradient-to-b from-purple-500 via-teal-500 to-yellow-500" />
               
               {milestones.map((milestone, index) => (
                 <motion.div
@@ -386,18 +386,18 @@ export function About() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className={`flex items-center gap-8 mb-12 ${
-                    index % 2 === 0 ? "flex-row" : "flex-row-reverse"
-                  }`}
+                  className={`flex md:items-center items-start gap-8 mb-12 relative flex-row ${
+                    index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
+                  } pl-8 md:pl-0`}
                 >
-                  <div className={`w-1/2 ${index % 2 === 0 ? "text-right" : "text-left"}`}>
-                    <div className="glass-light rounded-xl p-6 inline-block">
+                  <div className={`w-full md:w-1/2 ${index % 2 === 0 ? "text-left md:text-right" : "text-left"}`}>
+                    <div className="glass-light rounded-xl p-6 inline-block text-left">
                       <div className="text-3xl text-gradient mb-2">{milestone.year}</div>
                       <div className="text-gray-300">{milestone.achievement}</div>
                     </div>
                   </div>
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-teal-500 relative z-10" />
-                  <div className="w-1/2" />
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-teal-500 absolute md:relative md:left-auto left-[7px] z-10" />
+                  <div className="hidden md:block md:w-1/2" />
                 </motion.div>
               ))}
             </div>
