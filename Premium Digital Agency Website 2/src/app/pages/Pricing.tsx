@@ -14,6 +14,32 @@ const planColors = [
   "from-indigo-500 to-purple-500",
 ];
 
+function parseDecimal(val: any): number {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === "number") return val;
+  if (typeof val === "string") {
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  if (typeof val === "object") {
+    if (typeof val.toNumber === "function") {
+      return val.toNumber();
+    }
+    if (typeof val.toString === "function" && val.toString() !== "[object Object]") {
+      const parsed = parseFloat(val.toString());
+      if (!isNaN(parsed)) return parsed;
+    }
+    if (val.c && Array.isArray(val.c) && val.c.length > 0) {
+      const joinedDigits = val.c.join("");
+      const exponent = typeof val.e === "number" ? val.e : 0;
+      const sign = val.s === -1 ? -1 : 1;
+      const numVal = parseFloat(joinedDigits) / Math.pow(10, joinedDigits.length - 1 - exponent);
+      return isNaN(numVal) ? 0 : numVal * sign;
+    }
+  }
+  return 0;
+}
+
 type PricingProps = {
   plans: PublicPricingPlan[];
 };
@@ -125,8 +151,8 @@ export function Pricing({ plans }: PricingProps) {
                         <div className="text-5xl mb-2">
                           ₹
                           {billingCycle === "monthly"
-                            ? plan.monthlyPrice.toLocaleString()
-                            : (plan.annualPrice ?? plan.monthlyPrice).toLocaleString()}
+                            ? parseDecimal(plan.monthlyPrice).toLocaleString("en-IN")
+                            : parseDecimal(plan.annualPrice ?? plan.monthlyPrice).toLocaleString("en-IN")}
                         </div>
                         <div className="text-gray-400 text-sm">
                           per campaign, billed {billingCycle}
