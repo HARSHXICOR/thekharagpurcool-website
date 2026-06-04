@@ -47,6 +47,7 @@ export function Dashboard() {
 
   const [activeCampaigns, setActiveCampaigns] = useState<CampaignDetail[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+  const [viewMode, setViewMode] = useState<"campaign" | "analytics">("campaign");
 
   // Security guard
   useEffect(() => {
@@ -252,11 +253,40 @@ export function Dashboard() {
                 </button>
               </div>
             </div>
+
+            {activeCampaigns.length > 0 && (
+              <div className="mt-8 flex justify-center">
+                <div className="inline-flex items-center gap-2 glass-light p-1.5 rounded-full border border-white/5 shadow-lg">
+                  <button
+                    onClick={() => setViewMode("campaign")}
+                    className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                      viewMode === "campaign"
+                        ? "gradient-purple-teal text-white shadow"
+                        : "text-gray-400 hover:text-gray-200"
+                    }`}
+                  >
+                    <Layers size={14} />
+                    Campaign Status
+                  </button>
+                  <button
+                    onClick={() => setViewMode("analytics")}
+                    className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                      viewMode === "analytics"
+                        ? "gradient-purple-teal text-white shadow"
+                        : "text-gray-400 hover:text-gray-200"
+                    }`}
+                  >
+                    <TrendingUp size={14} />
+                    Creator Analytics
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
       </section>
 
-      {activeCampaigns.length > 0 ? (
+      {activeCampaigns.length > 0 && viewMode === "campaign" ? (
         <section className="pb-24">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
