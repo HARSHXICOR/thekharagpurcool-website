@@ -256,7 +256,9 @@ export function Portfolio() {
               Portfolio & Case Studies
             </div>
             <h1 className="text-5xl md:text-7xl mb-6 leading-tight">
-              Real Brands. <span className="text-gradient">Real Results.</span>
+              The Kharagpur Wala
+              <br />
+              <span className="text-gradient">Campaign Portfolio</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto">
               Browse our portfolio of successful campaigns and see the viral growth we've

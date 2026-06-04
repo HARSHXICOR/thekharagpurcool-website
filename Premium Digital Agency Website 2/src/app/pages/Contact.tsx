@@ -115,7 +115,9 @@ export function Contact({ services }: ContactProps) {
               Get In Touch
             </div>
             <h1 className="text-5xl md:text-7xl mb-6 leading-tight">
-              Let's Collaborate & <span className="text-gradient">Go Viral</span>
+              Collaborate With
+              <br />
+              <span className="text-gradient">The Kharagpur Wala</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto">
               Ready to promote your local business, cafe, or event to our 4M+ monthly

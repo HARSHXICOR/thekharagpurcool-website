@@ -132,6 +132,8 @@ export function About() {
               About The Kharagpur Wala
             </div>
             <h1 className="text-5xl md:text-7xl mb-6 leading-tight">
+              About The Kharagpur Wala
+              <br />
               We Turn Brands Into{" "}
               <span className="text-gradient">Movements</span>
             </h1>

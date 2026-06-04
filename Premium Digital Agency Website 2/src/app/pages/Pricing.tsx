@@ -80,7 +80,9 @@ export function Pricing({ plans }: PricingProps) {
               Simple, Transparent Pricing
             </div>
             <h1 className="text-5xl md:text-7xl mb-6 leading-tight">
-              Promotion <span className="text-gradient">Packages</span>
+              The Kharagpur Wala
+              <br />
+              <span className="text-gradient">Promotion Packages</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-8">
               Boost your brand presence in Paschim Midnapore with our highly optimized influencer campaign tiers.

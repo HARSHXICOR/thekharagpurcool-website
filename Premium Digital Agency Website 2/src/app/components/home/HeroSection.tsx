@@ -31,10 +31,9 @@ export function HeroSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight tracking-tight"
           >
-            Kharagpur's Leading
+            The Kharagpur Wala
             <br />
-            Blogger &{" "}
-            <span className="text-gradient">Digital Creator</span>
+            <span className="text-gradient">Blogger & Creator</span>
           </motion.h1>
 
           <motion.p

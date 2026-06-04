@@ -106,7 +106,9 @@ export function Blog({ posts }: BlogProps) {
               Insights & Strategies
             </div>
             <h1 className="text-5xl md:text-7xl mb-6 leading-tight">
-              Learn From <span className="text-gradient">The Experts</span>
+              The Kharagpur Wala
+              <br />
+              <span className="text-gradient">Marketing Insights & Blog</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto">
               Growth strategies, industry insights, and case studies from the trenches
