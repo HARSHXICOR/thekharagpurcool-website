@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
+import { getBackendApiUrl } from "../../lib/backend";
 import {
   Sparkles,
   ArrowLeft,
@@ -97,6 +98,11 @@ export function AdminCampaignDetail({ id }: AdminCampaignDetailProps) {
   const [mappingOwner, setMappingOwner] = useState(false);
   const [showMappingPanel, setShowMappingPanel] = useState(false);
 
+  // Instagram connection states
+  const [instagramAccount, setInstagramAccount] = useState<any>(null);
+  const [loadingInstagram, setLoadingInstagram] = useState(false);
+  const [connectingInstagram, setConnectingInstagram] = useState(false);
+
   // Security Guard
   useEffect(() => {
     if (!isLoading && !user) {
@@ -151,6 +157,48 @@ export function AdminCampaignDetail({ id }: AdminCampaignDetailProps) {
     return 0;
   };
 
+  // Load linked Instagram Account for this campaign's organization
+  const loadInstagramAccount = useCallback(async (orgId: string) => {
+    setLoadingInstagram(true);
+    try {
+      const backendUrl = getBackendApiUrl();
+      const res = await fetchWithAuth(`${backendUrl}/meta/accounts?orgId=${orgId}`);
+      if (res.ok) {
+        const list = await res.json();
+        if (list && list.length > 0) {
+          setInstagramAccount(list[0]);
+        } else {
+          setInstagramAccount(null);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load Instagram accounts:", err);
+    } finally {
+      setLoadingInstagram(false);
+    }
+  }, [fetchWithAuth]);
+
+  // Connect/Link Instagram account
+  const handleConnectInstagram = async () => {
+    if (!campaign) return;
+    setConnectingInstagram(true);
+    try {
+      const backendUrl = getBackendApiUrl();
+      const res = await fetchWithAuth(`${backendUrl}/meta/connect-url?orgId=${campaign.organizationId}`);
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload.message || "Failed to generate Meta connection URL.");
+      }
+      if (payload.url) {
+        window.location.href = payload.url;
+      }
+    } catch (err: any) {
+      alert(err.message || "Could not start Meta connection flow.");
+    } finally {
+      setConnectingInstagram(false);
+    }
+  };
+
   // Load Campaign Profile
   const loadCampaign = useCallback(async () => {
     setLoadingDetail(true);
@@ -170,12 +218,17 @@ export function AdminCampaignDetail({ id }: AdminCampaignDetailProps) {
       } else {
         setSelectedOwnerId("");
       }
+
+      // Load linked Instagram account details if organization is present
+      if (payload.organizationId) {
+        loadInstagramAccount(payload.organizationId);
+      }
     } catch (err: any) {
       setFetchError(err.message || "Unable to access this campaign profile.");
     } finally {
       setLoadingDetail(false);
     }
-  }, [id, fetchWithAuth]);
+  }, [id, fetchWithAuth, loadInstagramAccount]);
 
   // Load Client Users list for dropdown mapping
   const loadClientUsers = useCallback(async () => {
@@ -864,6 +917,85 @@ export function AdminCampaignDetail({ id }: AdminCampaignDetailProps) {
                         </button>
                       )}
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Instagram/Meta Connection Card */}
+              <div className="glass rounded-3xl p-6 border border-white/5 space-y-4">
+                <h3 className="text-xs text-gray-400 font-extrabold uppercase tracking-widest border-b border-white/5 pb-3 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Instagram size={14} className="text-pink-500" />
+                    Instagram Insights Link
+                  </span>
+                  {instagramAccount && (
+                    <span className="text-[9px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full border border-green-500/20 font-extrabold uppercase tracking-wider">
+                      Linked
+                    </span>
+                  )}
+                </h3>
+
+                {loadingInstagram ? (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-pink-500"></div>
+                  </div>
+                ) : instagramAccount ? (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                      <div className="flex items-center gap-3">
+                        {instagramAccount.profilePictureUrl ? (
+                          <img
+                            src={instagramAccount.profilePictureUrl}
+                            alt={instagramAccount.username}
+                            className="w-10 h-10 rounded-full border border-white/10"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center font-bold text-white text-sm uppercase">
+                            {instagramAccount.username.substring(0, 2)}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm font-bold text-white truncate">@{instagramAccount.username}</h4>
+                          <p className="text-[10px] text-gray-400 truncate">{instagramAccount.displayName || "Instagram Creator"}</p>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
+                        <span className="text-gray-500">Followers</span>
+                        <span className="text-pink-400 font-bold">{instagramAccount.followersCount?.toLocaleString() || "0"}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-gray-500">Linked Facebook Page</span>
+                        <span className="text-gray-300 font-semibold truncate max-w-[120px]">{instagramAccount.pageName || "Linked Page"}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleConnectInstagram}
+                      disabled={connectingInstagram}
+                      className="w-full py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 text-xs text-gray-300 font-bold transition-all cursor-pointer text-center hover:bg-white/10"
+                    >
+                      {connectingInstagram ? "Reconnecting..." : "Reconnect Instagram Profile"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-3.5 rounded-xl bg-pink-500/5 border border-pink-500/15 text-pink-300 text-xs leading-relaxed">
+                      <div className="flex gap-2 items-start font-medium">
+                        <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                        <span>
+                          No Instagram profile linked to this client's organization. Connect page to sync campaign views, reach, and organic reels.
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleConnectInstagram}
+                      disabled={connectingInstagram}
+                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-bold transition-all cursor-pointer hover:shadow-lg hover:shadow-pink-500/10 disabled:opacity-50 text-center flex items-center justify-center gap-2"
+                    >
+                      <Instagram size={14} />
+                      {connectingInstagram ? "Initializing..." : "Link Instagram Profile"}
+                    </button>
                   </div>
                 )}
               </div>
