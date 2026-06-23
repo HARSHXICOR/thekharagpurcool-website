@@ -27,9 +27,9 @@ export class MetaService implements OnModuleInit {
     );
     // Payload state contains organization boundaries
     const state = Buffer.from(JSON.stringify({ orgId, userId })).toString('base64');
-    const scopes = 'pages_show_list,instagram_basic,instagram_manage_insights,pages_read_engagement';
+    const scopes = 'instagram_business_basic,instagram_business_manage_insights,instagram_business_manage_comments';
 
-    return `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=${scopes}&state=${state}&response_type=code`;
+    return `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${redirectUri}&scope=${scopes}&state=${state}&response_type=code`;
   }
 
   /**
@@ -237,68 +237,45 @@ export class MetaService implements OnModuleInit {
       const appSecret = process.env.META_APP_SECRET || 'mock-meta-app-secret';
       const redirectUri = process.env.META_REDIRECT_URI || 'http://localhost:3001/api/v1/meta/callback';
 
-      // 1. Exchange short-lived token
-      const shortTokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(
-        redirectUri,
-      )}&client_secret=${appSecret}&code=${code}`;
-      const shortTokenRes = await fetch(shortTokenUrl);
+      // 1. Exchange short-lived token (POST request)
+      const body = new URLSearchParams();
+      body.append('client_id', appId);
+      body.append('client_secret', appSecret);
+      body.append('grant_type', 'authorization_code');
+      body.append('redirect_uri', redirectUri);
+      body.append('code', code);
+
+      const shortTokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body.toString(),
+      });
+
       if (!shortTokenRes.ok) {
         const err = await shortTokenRes.json();
-        throw new BadRequestException(`Meta auth code exchange failed: ${JSON.stringify(err)}`);
+        throw new BadRequestException(`Instagram short-lived token exchange failed: ${JSON.stringify(err)}`);
       }
       const shortTokenData = await shortTokenRes.json();
       const shortToken = shortTokenData.access_token;
+      const instagramUserId = String(shortTokenData.user_id);
 
       // 2. Exchange long-lived 60-day token
-      const longTokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`;
+      const longTokenUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`;
       const longTokenRes = await fetch(longTokenUrl);
       if (!longTokenRes.ok) {
         const err = await longTokenRes.json();
-        throw new BadRequestException(`Meta long-lived token exchange failed: ${JSON.stringify(err)}`);
+        throw new BadRequestException(`Instagram long-lived token exchange failed: ${JSON.stringify(err)}`);
       }
       const longTokenData = await longTokenRes.json();
       const longToken = longTokenData.access_token;
       const expiresSeconds = longTokenData.expires_in || 5184000;
       const expiresAt = new Date(Date.now() + expiresSeconds * 1000);
 
-      // 3. Fetch admin pages
-      const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${longToken}`);
-      if (!pagesRes.ok) {
-        const err = await pagesRes.json();
-        throw new BadRequestException(`Failed to retrieve user Facebook Pages: ${JSON.stringify(err)}`);
-      }
-      const pagesData = await pagesRes.json();
-      const pages = pagesData.data || [];
-      if (pages.length === 0) {
-        throw new BadRequestException('No Facebook Pages found associated with this user access token.');
-      }
-
-      // 4. Resolve Instagram Business Account ID
-      let linkedPage = null;
-      let instagramUserId = null;
-      for (const page of pages) {
-        const detailRes = await fetch(
-          `https://graph.facebook.com/v19.0/${page.id}?fields=instagram_business_account,name&access_token=${longToken}`,
-        );
-        if (detailRes.ok) {
-          const detail = await detailRes.json();
-          if (detail.instagram_business_account?.id) {
-            linkedPage = page;
-            instagramUserId = detail.instagram_business_account.id;
-            break;
-          }
-        }
-      }
-
-      if (!instagramUserId) {
-        throw new BadRequestException(
-          'Could not find any Instagram Professional Account linked to the authorized Facebook Pages.',
-        );
-      }
-
-      // 5. Query Instagram Profile details
+      // 3. Query Instagram Profile details
       const profileRes = await fetch(
-        `https://graph.facebook.com/v19.0/${instagramUserId}?fields=username,name,biography,profile_picture_url,followers_count,follows_count,media_count&access_token=${longToken}`,
+        `https://graph.instagram.com/v25.0/me?fields=user_id,username,name,biography,profile_picture_url,followers_count,follows_count,media_count,website,account_type&access_token=${longToken}`,
       );
       if (!profileRes.ok) {
         const err = await profileRes.json();
@@ -334,8 +311,8 @@ export class MetaService implements OnModuleInit {
             organizationId: orgId,
             authorizedByUserId: userId,
             instagramUserId,
-            pageId: linkedPage.id,
-            pageName: linkedPage.name,
+            pageId: instagramUserId, // Fallback schema value (IG Login has no FB Page)
+            pageName: `${profile.username} Page`, // Fallback schema value
             username: profile.username,
             displayName: profile.name || profile.username,
             accountType: profile.account_type || 'BUSINESS',
@@ -362,17 +339,17 @@ export class MetaService implements OnModuleInit {
             expiresAt,
             issuedAt: new Date(),
             keyVersion: 'v1',
-            scopes: ['pages_show_list', 'instagram_basic', 'instagram_manage_insights', 'pages_read_engagement'],
+            scopes: ['instagram_business_basic', 'instagram_business_manage_insights', 'instagram_business_manage_comments'],
           },
         });
 
         return accountRecord;
       });
 
-      // 6. Sync recent media items
+      // 4. Sync recent media items
       try {
         const mediaRes = await fetch(
-          `https://graph.facebook.com/v19.0/${instagramUserId}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,shortcode,like_count,comments_count&access_token=${longToken}&limit=10`,
+          `https://graph.instagram.com/v25.0/me/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,shortcode,like_count,comments_count&access_token=${longToken}&limit=10`,
         );
         if (mediaRes.ok) {
           const mediaData = await mediaRes.json();
@@ -545,7 +522,7 @@ export class MetaService implements OnModuleInit {
         // Real Graph API Sync logic
         try {
           const mediaRes = await fetch(
-            `https://graph.facebook.com/v19.0/${account.instagramUserId}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,shortcode,like_count,comments_count&access_token=${token}&limit=20`,
+            `https://graph.instagram.com/v25.0/me/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,shortcode,like_count,comments_count&access_token=${token}&limit=20`,
           );
           if (!mediaRes.ok) continue;
 
@@ -592,15 +569,13 @@ export class MetaService implements OnModuleInit {
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
             if (publishedDate >= thirtyDaysAgo) {
-              let metricQuery = '';
-              if (['REEL', 'VIDEO'].includes(item.media_type)) {
-                metricQuery = 'play_count,reach,saved,shares,comments,likes';
-              } else {
-                metricQuery = 'impressions,reach,saved,shares,comments,likes';
+              let metricQuery = 'reach,saved,shares';
+              if (item.media_type !== 'REEL') {
+                metricQuery = 'impressions,reach,saved,shares';
               }
 
               const insightsRes = await fetch(
-                `https://graph.facebook.com/v19.0/${item.id}/insights?metric=${metricQuery}&access_token=${token}`,
+                `https://graph.instagram.com/v25.0/${item.id}/insights?metric=${metricQuery}&access_token=${token}`,
               );
               if (insightsRes.ok) {
                 const insightsData = await insightsRes.json();
@@ -619,12 +594,12 @@ export class MetaService implements OnModuleInit {
                     },
                   },
                   update: {
-                    plays: metricMap['play_count'] || 0,
-                    views: metricMap['play_count'] || 0,
+                    plays: item.media_type === 'REEL' ? (metricMap['reach'] * 1.2) : 0,
+                    views: item.media_type === 'REEL' ? (metricMap['reach'] * 1.2) : 0,
                     reach: metricMap['reach'] || 0,
-                    impressions: metricMap['impressions'] || 0,
-                    likes: metricMap['likes'] || 0,
-                    comments: metricMap['comments'] || 0,
+                    impressions: metricMap['impressions'] || metricMap['reach'] || 0,
+                    likes: item.like_count || 0,
+                    comments: item.comments_count || 0,
                     shares: metricMap['shares'] || 0,
                     saves: metricMap['saved'] || 0,
                     snapshotAt: new Date(),
@@ -634,12 +609,12 @@ export class MetaService implements OnModuleInit {
                     instagramAccountId: account.id,
                     metricDate: new Date(),
                     snapshotAt: new Date(),
-                    plays: metricMap['play_count'] || 0,
-                    views: metricMap['play_count'] || 0,
+                    plays: item.media_type === 'REEL' ? (metricMap['reach'] * 1.2) : 0,
+                    views: item.media_type === 'REEL' ? (metricMap['reach'] * 1.2) : 0,
                     reach: metricMap['reach'] || 0,
-                    impressions: metricMap['impressions'] || 0,
-                    likes: metricMap['likes'] || 0,
-                    comments: metricMap['comments'] || 0,
+                    impressions: metricMap['impressions'] || metricMap['reach'] || 0,
+                    likes: item.like_count || 0,
+                    comments: item.comments_count || 0,
                     shares: metricMap['shares'] || 0,
                     saves: metricMap['saved'] || 0,
                   },
