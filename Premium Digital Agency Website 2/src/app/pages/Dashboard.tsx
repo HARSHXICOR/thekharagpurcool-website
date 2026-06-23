@@ -362,8 +362,8 @@ export function Dashboard() {
     },
     {
       label: "Paid Collabs",
-      value: activeCampaigns.length > 0 ? `${activeCampaigns.length}` : "600+",
-      change: activeCampaigns.length > 0 ? "Active" : "+85%",
+      value: instagramAccount ? formatNumber(instagramAccount.mediaCount || 0) : "600+",
+      change: instagramAccount ? "Live" : "+85%",
       icon: DollarSign,
       color: "text-yellow-400",
     },

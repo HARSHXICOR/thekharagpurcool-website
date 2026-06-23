@@ -119,11 +119,16 @@ export class OrganizationsService {
       totalEngagementRate = 8.9;
     }
 
+    let paidCollabsVal = 600;
+    if (accounts.length > 0) {
+      paidCollabsVal = accounts[0].mediaCount || 600;
+    }
+
     return {
       totalFollowers,
       engagementRate: totalEngagementRate,
       monthlyReach: totalReach || 4200000,
-      paidCollabs: activeCampaignsCount || 600,
+      paidCollabs: paidCollabsVal,
       organizationName: organization.name,
       slug: organization.slug,
     };
