@@ -88,4 +88,10 @@ export class MetaController {
   async getMedia(@Param('id') id: string) {
     return this.metaService.getMedia(id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('accounts/:id/demographics')
+  async getDemographics(@Param('id') id: string) {
+    return this.metaService.getDemographics(id);
+  }
 }

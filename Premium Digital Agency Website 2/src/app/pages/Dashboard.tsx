@@ -54,6 +54,12 @@ export function Dashboard() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [instagramAccount, setInstagramAccount] = useState<any>(null);
   const [instagramMedia, setInstagramMedia] = useState<any[]>([]);
+  const [instagramDemographics, setInstagramDemographics] = useState<any[]>([
+    { name: "18-24", value: 28 },
+    { name: "25-34", value: 42 },
+    { name: "35-44", value: 20 },
+    { name: "45+", value: 10 },
+  ]);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [connectingInstagram, setConnectingInstagram] = useState(false);
 
@@ -137,9 +143,22 @@ export function Dashboard() {
                 const mediaList = await mediaRes.json();
                 setInstagramMedia(mediaList || []);
               }
+
+              // Load demographics
+              const demoRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/demographics`);
+              if (demoRes.ok) {
+                const demoList = await demoRes.json();
+                setInstagramDemographics(demoList || []);
+              }
             } else {
               setInstagramAccount(null);
               setInstagramMedia([]);
+              setInstagramDemographics([
+                { name: "18-24", value: 28 },
+                { name: "25-34", value: 42 },
+                { name: "35-44", value: 20 },
+                { name: "45+", value: 10 },
+              ]);
             }
           }
         }
@@ -939,7 +958,7 @@ export function Dashboard() {
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={audienceDemographics}
+                        data={instagramDemographics}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -948,7 +967,7 @@ export function Dashboard() {
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {audienceDemographics.map((entry, index) => (
+                        {instagramDemographics.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
