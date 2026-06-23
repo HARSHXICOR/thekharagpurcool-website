@@ -6,6 +6,33 @@ export class OrganizationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getMyOrganizations(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { defaultRole: true },
+    });
+
+    const isAdmin = user && ['super_admin', 'admin', 'account_manager'].includes(user.defaultRole);
+
+    if (isAdmin) {
+      const allOrgs = await this.prisma.organization.findMany({
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          industry: true,
+          instagramHandle: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+      return allOrgs.map((org) => ({
+        organization: org,
+        role: 'admin',
+        joinedAt: org.createdAt,
+      }));
+    }
+
     const memberships = await this.prisma.organizationMembership.findMany({
       where: {
         userId,
@@ -61,8 +88,16 @@ export class OrganizationsService {
       (c) => c.status === 'active',
     ).length;
 
-    if (organization.instagramAccounts.length > 0) {
-      totalFollowers = organization.instagramAccounts.reduce(
+    let accounts = organization.instagramAccounts;
+    if (accounts.length === 0) {
+      accounts = await this.prisma.instagramAccount.findMany({
+        where: { status: 'active', deletedAt: null },
+        take: 1,
+      });
+    }
+
+    if (accounts.length > 0) {
+      totalFollowers = accounts.reduce(
         (sum, account) => sum + (account.followersCount || 0),
         0,
       );

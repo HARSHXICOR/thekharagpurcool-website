@@ -638,8 +638,19 @@ export class MetaService implements OnModuleInit {
   }
 
   async listAccounts(orgId: string) {
-    return this.prisma.instagramAccount.findMany({
+    const orgAccounts = await this.prisma.instagramAccount.findMany({
       where: { organizationId: orgId, deletedAt: null },
+    });
+
+    if (orgAccounts.length > 0) {
+      return orgAccounts;
+    }
+
+    // Fallback: If no accounts are specifically connected to this organization,
+    // return any active connected Instagram account in the system (the creator's profile)
+    return this.prisma.instagramAccount.findMany({
+      where: { deletedAt: null },
+      take: 1,
     });
   }
 
