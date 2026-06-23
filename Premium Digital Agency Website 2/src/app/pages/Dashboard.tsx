@@ -55,6 +55,28 @@ export function Dashboard() {
   const [instagramAccount, setInstagramAccount] = useState<any>(null);
   const [instagramMedia, setInstagramMedia] = useState<any[]>([]);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [connectingInstagram, setConnectingInstagram] = useState(false);
+
+  const handleConnectInstagram = async () => {
+    if (!organizations || organizations.length === 0) return;
+    setConnectingInstagram(true);
+    try {
+      const orgId = organizations[0].organization.id;
+      const backendUrl = getBackendApiUrl();
+      const res = await fetchWithAuth(`${backendUrl}/meta/connect-url?orgId=${orgId}`);
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(payload.message || "Failed to generate Meta connection URL.");
+      }
+      if (payload.url) {
+        window.location.href = payload.url;
+      }
+    } catch (err: any) {
+      console.error("Failed to connect Instagram:", err);
+    } finally {
+      setConnectingInstagram(false);
+    }
+  };
 
   // Security guard
   useEffect(() => {
@@ -670,7 +692,7 @@ export function Dashboard() {
           <section className="pb-12">
             <div className="container mx-auto px-4">
               {/* Live Sync Status Banner */}
-              <div className="mb-6 flex justify-center">
+              <div className="mb-6 flex flex-col items-center gap-4">
                 {instagramAccount ? (
                   <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-semibold shadow-lg">
                     <span className="relative flex h-2.5 w-2.5">
@@ -680,9 +702,21 @@ export function Dashboard() {
                     <span>Live Instagram Sync Active: <strong>@{instagramAccount.username}</strong></span>
                   </div>
                 ) : (
-                  <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold shadow-lg">
-                    <AlertCircle size={14} className="text-purple-400 animate-pulse" />
-                    <span>Mock Preview Mode. Connect your Instagram profile in Campaign settings to sync live metrics.</span>
+                  <div className="flex flex-col sm:flex-row items-center gap-3 px-5 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold shadow-lg max-w-2xl text-center sm:text-left">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle size={16} className="text-purple-400 animate-pulse flex-shrink-0" />
+                      <span>Mock Preview Mode. Connect your Instagram profile to sync live creator metrics.</span>
+                    </div>
+                    {organizations && organizations.length > 0 && (
+                      <button
+                        onClick={handleConnectInstagram}
+                        disabled={connectingInstagram}
+                        className="px-4 py-1.5 rounded-full gradient-purple-teal hover:glow-purple text-[10px] font-bold uppercase tracking-wider text-white transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <Instagram size={12} />
+                        {connectingInstagram ? "Connecting..." : "Connect Instagram"}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
