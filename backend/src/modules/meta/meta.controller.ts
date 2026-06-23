@@ -5,7 +5,9 @@ import {
   Param,
   UseGuards,
   ForbiddenException,
+  Res,
 } from '@nestjs/common';
+import * as express from 'express';
 import { MetaService } from './meta.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgMembershipGuard } from '../auth/guards/org-membership.guard';
@@ -44,18 +46,14 @@ export class MetaController {
   async handleCallback(
     @Query('code') code: string,
     @Query('state') state: string,
+    @Res() res: express.Response,
   ) {
     if (!code || !state) {
       throw new ForbiddenException('Missing code or state parameters from callback.');
     }
     const account = await this.metaService.handleCallback(code, state);
-    return {
-      message: 'Instagram Professional account connected successfully.',
-      accountId: account.id,
-      username: account.username,
-      displayName: account.displayName,
-      followers: account.followersCount,
-    };
+    const frontendOrigin = process.env.FRONTEND_ORIGIN || 'https://thekharagpurcool.vercel.app';
+    return res.redirect(`${frontendOrigin}/dashboard?connected=true&username=${account.username}`);
   }
 
   @UseGuards(JwtAuthGuard)
