@@ -791,6 +791,31 @@ export class MetaService implements OnModuleInit {
 
         // Real Graph API Sync logic
         try {
+          // Probe capabilities if they haven't been checked yet (e.g. for existing linked accounts)
+          const needsProbe = !account.supportsDemographics &&
+                             !account.supportsCountryBreakdown &&
+                             !account.supportsCityBreakdown &&
+                             !account.supportsHistoricalFollowerInsights &&
+                             account.videoMetricType === null;
+          if (needsProbe) {
+            try {
+              await this.capabilityService.probeAccountCapabilities(account.id, token);
+              // Reload account record from DB to get the new capability flags
+              const reloaded = await this.prisma.instagramAccount.findUnique({
+                where: { id: account.id },
+              });
+              if (reloaded) {
+                account.supportsDemographics = reloaded.supportsDemographics;
+                account.supportsCountryBreakdown = reloaded.supportsCountryBreakdown;
+                account.supportsCityBreakdown = reloaded.supportsCityBreakdown;
+                account.supportsHistoricalFollowerInsights = reloaded.supportsHistoricalFollowerInsights;
+                account.videoMetricType = reloaded.videoMetricType;
+              }
+            } catch (probeErr) {
+              console.error(`Automatic capability probing failed for account ${account.id}:`, probeErr);
+            }
+          }
+
           // 1. Sync Profile
           const profileRes = await fetch(
             `https://graph.instagram.com/v25.0/me?fields=followers_count,follows_count,media_count&access_token=${token}`,
