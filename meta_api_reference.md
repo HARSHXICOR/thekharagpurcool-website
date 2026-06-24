@@ -304,9 +304,60 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 | `period` | String | `lifetime` |
 | `access_token` | String | Decrypted long-lived access token |
 
-### Real Response Payload
+### Real Response Payload (Initial / Low Interactions State)
+> [!NOTE]
+> When the account has just been configured in the Meta App Developer Dashboard, or has fewer than 100 followers, or lacks sufficient recent engagement, the API returns an empty `data` array.
+
 ```json
 {
   "data": []
+}
+```
+
+### Real Response Payload (Fully Populated State)
+> [!TIP]
+> Once Meta gathers enough active interaction metrics, the payload returns nested dictionaries for `age`, `gender`, `country`, and `city` under the `value` object.
+
+```json
+{
+  "data": [
+    {
+      "name": "follower_demographics",
+      "period": "lifetime",
+      "values": [
+        {
+          "value": {
+            "age": {
+              "18-24": 1502,
+              "25-34": 2235,
+              "35-44": 1205,
+              "45-54": 521,
+              "55-64": 112,
+              "65+": 45
+            },
+            "gender": {
+              "F": 2240,
+              "M": 3380
+            },
+            "country": {
+              "IN": 4820,
+              "US": 512,
+              "AE": 180,
+              "BD": 108
+            },
+            "city": {
+              "Kharagpur, West Bengal": 2840,
+              "Kolkata, West Bengal": 1105,
+              "Midnapore, West Bengal": 542,
+              "Bengaluru, Karnataka": 133
+            }
+          }
+        }
+      ],
+      "title": "Follower Demographics",
+      "description": "The demographic distribution of your followers.",
+      "id": "17841457215396811/insights/follower_demographics/lifetime"
+    }
+  ]
 }
 ```
