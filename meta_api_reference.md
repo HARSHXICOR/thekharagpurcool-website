@@ -15,7 +15,7 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 | Name | Type | Value / Description |
 |---|---|---|
 | `client_id` | String | Meta App ID (`990049833806879`) |
-| `client_secret` | String | Meta App Secret |
+| `client_secret` | String | Meta App Secret (`3911822e7602df5248d9023c38654a7c`) |
 | `grant_type` | String | `authorization_code` |
 | `redirect_uri` | String | Must match the OAuth redirect configuration |
 | `code` | String | The authorization code returned by Instagram |
@@ -40,7 +40,7 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 | Name | Type | Value / Description |
 |---|---|---|
 | `grant_type` | String | `ig_exchange_token` |
-| `client_secret` | String | Meta App Secret |
+| `client_secret` | String | Meta App Secret (`3911822e7602df5248d9023c38654a7c`) |
 | `access_token` | String | Short-lived token |
 
 ### Real Response Payload
