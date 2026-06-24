@@ -402,7 +402,6 @@ export class MetaService implements OnModuleInit {
       }
       const shortTokenData = await shortTokenRes.json();
       const shortToken = shortTokenData.access_token;
-      const instagramUserId = String(shortTokenData.user_id);
 
       // 2. Exchange long-lived 60-day token
       const longTokenUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`;
@@ -426,6 +425,7 @@ export class MetaService implements OnModuleInit {
       }
       const profile = await profileRes.json();
 
+      const instagramUserId = String(profile.id || profile.user_id);
       const encryptedToken = this.encryption.encrypt(longToken);
 
       const account = await this.prisma.$transaction(async (tx) => {
