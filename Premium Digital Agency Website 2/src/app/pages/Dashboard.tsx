@@ -51,6 +51,7 @@ export function Dashboard() {
   const [viewMode, setViewMode] = useState<"campaign" | "analytics">("campaign");
 
   // Live Meta/Instagram analytics states
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [instagramAccount, setInstagramAccount] = useState<any>(null);
   const [instagramMedia, setInstagramMedia] = useState<any[]>([]);
@@ -87,7 +88,7 @@ export function Dashboard() {
     if (!organizations || organizations.length === 0) return;
     setConnectingInstagram(true);
     try {
-      const orgId = organizations[0].organization.id;
+      const orgId = selectedOrgId || organizations[0].organization.id;
       const backendUrl = getBackendApiUrl();
       const res = await fetchWithAuth(`${backendUrl}/meta/connect-url?orgId=${orgId}`);
       const payload = await res.json();
@@ -102,6 +103,12 @@ export function Dashboard() {
     } finally {
       setConnectingInstagram(false);
     }
+  };
+
+  const handleOrgChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newOrgId = e.target.value;
+    setSelectedOrgId(newOrgId);
+    loadCreatorAnalytics(newOrgId);
   };
 
   // Security guard
@@ -141,7 +148,7 @@ export function Dashboard() {
   }, [fetchWithAuth]);
 
   // Load live Meta/Instagram sync data
-  const loadCreatorAnalytics = useCallback(async () => {
+  const loadCreatorAnalytics = useCallback(async (orgIdOverride?: string) => {
     setLoadingAnalytics(true);
     try {
       const orgRes = await fetchWithAuth("/api/organizations/me");
@@ -149,8 +156,16 @@ export function Dashboard() {
         const orgs = await orgRes.json();
         setOrganizations(orgs);
         if (orgs && orgs.length > 0) {
-          const orgId = orgs[0].organization.id;
-          const accountsRes = await fetchWithAuth(`/api/meta/accounts?orgId=${orgId}`);
+          const targetOrgId = orgIdOverride || selectedOrgId || orgs[0].organization.id;
+          const finalOrgId = orgs.some((o: any) => o.organization.id === targetOrgId)
+            ? targetOrgId
+            : orgs[0].organization.id;
+
+          if (finalOrgId !== selectedOrgId) {
+            setSelectedOrgId(finalOrgId);
+          }
+
+          const accountsRes = await fetchWithAuth(`/api/meta/accounts?orgId=${finalOrgId}`);
           if (accountsRes.ok) {
             const accountsList = await accountsRes.json();
             if (accountsList && accountsList.length > 0) {
@@ -214,7 +229,7 @@ export function Dashboard() {
     } finally {
       setLoadingAnalytics(false);
     }
-  }, [fetchWithAuth]);
+  }, [fetchWithAuth, selectedOrgId]);
 
   useEffect(() => {
     if (!user) return;
@@ -854,8 +869,26 @@ export function Dashboard() {
           <section className="pb-12">
             <div className="container mx-auto px-4">
               {/* Live Sync Status Banner */}
-              <div className="mb-6 flex flex-col items-center gap-4">
-                {renderSyncStatus()}
+              <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4">
+                <div className="flex-grow flex justify-center sm:justify-start">
+                  {renderSyncStatus()}
+                </div>
+                {organizations.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 text-xs font-semibold">Active Business:</span>
+                    <select
+                      value={selectedOrgId || ""}
+                      onChange={handleOrgChange}
+                      className="bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-300 font-semibold focus:outline-none focus:border-purple-500/50 cursor-pointer"
+                    >
+                      {organizations.map((org: any) => (
+                        <option key={org.organization.id} value={org.organization.id} className="bg-[#0f0f15] text-gray-300">
+                          {org.organization.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
