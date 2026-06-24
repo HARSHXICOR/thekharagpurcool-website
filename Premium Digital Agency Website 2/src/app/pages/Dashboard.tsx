@@ -171,24 +171,45 @@ export function Dashboard() {
               setInstagramAccount(activeAccount);
 
               // Load media
-              const mediaRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/media`);
-              if (mediaRes.ok) {
-                const mediaList = await mediaRes.json();
-                setInstagramMedia(mediaList || []);
+              try {
+                const mediaRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/media`);
+                if (mediaRes.ok) {
+                  const mediaList = await mediaRes.json();
+                  setInstagramMedia(mediaList || []);
+                } else {
+                  setInstagramMedia([]);
+                }
+              } catch (e) {
+                console.error("Media load error:", e);
+                setInstagramMedia([]);
               }
 
               // Load demographics
-              const demoRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/demographics`);
-              if (demoRes.ok) {
-                const demoData = await demoRes.json();
-                setInstagramDemographics(demoData);
+              try {
+                const demoRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/demographics`);
+                if (demoRes.ok) {
+                  const demoData = await demoRes.json();
+                  setInstagramDemographics(demoData || { age: [], gender: [], country: [], city: [] });
+                } else {
+                  setInstagramDemographics({ age: [], gender: [], country: [], city: [] });
+                }
+              } catch (e) {
+                console.error("Demographics load error:", e);
+                setInstagramDemographics({ age: [], gender: [], country: [], city: [] });
               }
 
               // Load follower growth
-              const growthRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/follower-growth`);
-              if (growthRes.ok) {
-                const growthData = await growthRes.json();
-                setFollowerGrowthData(growthData || []);
+              try {
+                const growthRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/follower-growth`);
+                if (growthRes.ok) {
+                  const growthData = await growthRes.json();
+                  setFollowerGrowthData(growthData || []);
+                } else {
+                  setFollowerGrowthData([]);
+                }
+              } catch (e) {
+                console.error("Follower growth load error:", e);
+                setFollowerGrowthData([]);
               }
             } else {
               setInstagramAccount(null);
@@ -201,6 +222,16 @@ export function Dashboard() {
                 city: [],
               });
             }
+          } else {
+            setInstagramAccount(null);
+            setInstagramMedia([]);
+            setFollowerGrowthData([]);
+            setInstagramDemographics({
+              age: [],
+              gender: [],
+              country: [],
+              city: [],
+            });
           }
         }
       }
@@ -982,33 +1013,47 @@ export function Dashboard() {
                     </div>
                     <TrendingUp size={24} className="text-green-400" />
                   </div>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={followerGrowth}>
-                      <defs>
-                        <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="month" stroke="#999" />
-                      <YAxis stroke="#999" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "rgba(26, 26, 36, 0.9)",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="followers"
-                        stroke="#a855f7"
-                        fillOpacity={1}
-                        fill="url(#colorFollowers)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  {!instagramAccount ? (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
+                      <TrendingUp size={40} className="text-gray-600 mb-3" />
+                      <p className="text-sm font-semibold text-gray-400">No Instagram Account Connected</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm">Please link your Instagram professional account to view follower growth trends.</p>
+                    </div>
+                  ) : followerGrowth.length === 0 ? (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
+                      <TrendingUp size={40} className="text-gray-600 mb-3" />
+                      <p className="text-sm font-semibold text-gray-400">No Follower Growth Data Available</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm">Waiting for Meta to sync daily historical follower insights.</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <AreaChart data={followerGrowth}>
+                        <defs>
+                          <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                        <XAxis dataKey="month" stroke="#999" />
+                        <YAxis stroke="#999" />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "rgba(26, 26, 36, 0.9)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="followers"
+                          stroke="#a855f7"
+                          fillOpacity={1}
+                          fill="url(#colorFollowers)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
                 </motion.div>
 
                 <motion.div
@@ -1024,23 +1069,37 @@ export function Dashboard() {
                     </div>
                     <Eye size={24} className="text-teal-400" />
                   </div>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={reachData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="week" stroke="#999" />
-                      <YAxis stroke="#999" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "rgba(26, 26, 36, 0.9)",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Legend />
-                      <Bar dataKey="reach" fill="#14b8a6" radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="impressions" fill="#a855f7" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {!instagramAccount ? (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
+                      <Eye size={40} className="text-gray-600 mb-3" />
+                      <p className="text-sm font-semibold text-gray-400">No Instagram Account Connected</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm">Please link your Instagram professional account to view reach and impressions.</p>
+                    </div>
+                  ) : reachData.length === 0 ? (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
+                      <Eye size={40} className="text-gray-600 mb-3" />
+                      <p className="text-sm font-semibold text-gray-400">No Reach Data Available</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm">Publish media posts on Instagram to start gathering insights.</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={reachData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                        <XAxis dataKey="week" stroke="#999" />
+                        <YAxis stroke="#999" />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "rgba(26, 26, 36, 0.9)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="reach" fill="#14b8a6" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="impressions" fill="#a855f7" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </motion.div>
 
                 <motion.div
@@ -1056,21 +1115,35 @@ export function Dashboard() {
                     </div>
                     <Heart size={24} className="text-pink-400" />
                   </div>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={contentPerformance} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis type="number" stroke="#999" />
-                      <YAxis dataKey="type" type="category" stroke="#999" width={100} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "rgba(26, 26, 36, 0.9)",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Bar dataKey="avgViews" fill="#fbbf24" radius={[0, 8, 8, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {!instagramAccount ? (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
+                      <Heart size={40} className="text-gray-600 mb-3" />
+                      <p className="text-sm font-semibold text-gray-400">No Instagram Account Connected</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm">Please link your Instagram professional account to view content performance.</p>
+                    </div>
+                  ) : contentPerformance.length === 0 ? (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
+                      <Heart size={40} className="text-gray-600 mb-3" />
+                      <p className="text-sm font-semibold text-gray-400">No Content Metrics Available</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm">Waiting for posts of type Reels, Carousels, or Single Posts to sync.</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={contentPerformance} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                        <XAxis type="number" stroke="#999" />
+                        <YAxis dataKey="type" type="category" stroke="#999" width={100} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "rgba(26, 26, 36, 0.9)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <Bar dataKey="avgViews" fill="#fbbf24" radius={[0, 8, 8, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </motion.div>
 
                 <motion.div
@@ -1126,7 +1199,13 @@ export function Dashboard() {
                     </div>
                   </div>
 
-                  {instagramAccount && !instagramAccount.supportsDemographics ? (
+                  {!instagramAccount ? (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
+                      <Users size={40} className="text-gray-600 mb-3" />
+                      <p className="text-sm font-semibold text-gray-400">No Instagram Account Connected</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm">Please link your Instagram professional account to view audience demographics.</p>
+                    </div>
+                  ) : !instagramAccount.supportsDemographics ? (
                     <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
                       <Users size={40} className="text-gray-600 mb-3" />
                       <p className="text-sm font-semibold text-gray-400">Audience Demographics Restricted</p>
