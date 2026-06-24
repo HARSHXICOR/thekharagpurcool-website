@@ -156,10 +156,28 @@ export function Dashboard() {
         const orgs = await orgRes.json();
         setOrganizations(orgs);
         if (orgs && orgs.length > 0) {
-          const targetOrgId = orgIdOverride || selectedOrgId || orgs[0].organization.id;
+          // Look for an organization that has 'the_kharagpur_wala_' connected
+          let defaultOrg = orgs[0];
+          const kharagpurWalaOrg = orgs.find((o: any) => 
+            o.organization.instagramAccounts?.some((acc: any) => acc.username === 'the_kharagpur_wala_')
+          );
+          
+          if (kharagpurWalaOrg) {
+            defaultOrg = kharagpurWalaOrg;
+          } else {
+            // Otherwise, fall back to any organization with a connected Instagram account
+            const connectedOrg = orgs.find((o: any) => 
+              o.organization.instagramAccounts && o.organization.instagramAccounts.length > 0
+            );
+            if (connectedOrg) {
+              defaultOrg = connectedOrg;
+            }
+          }
+
+          const targetOrgId = orgIdOverride || selectedOrgId || defaultOrg.organization.id;
           const finalOrgId = orgs.some((o: any) => o.organization.id === targetOrgId)
             ? targetOrgId
-            : orgs[0].organization.id;
+            : defaultOrg.organization.id;
 
           if (finalOrgId !== selectedOrgId) {
             setSelectedOrgId(finalOrgId);

@@ -12,7 +12,6 @@ export class OrganizationsService {
     });
 
     const isAdmin = user && ['super_admin', 'admin', 'account_manager'].includes(user.defaultRole);
-
     if (isAdmin) {
       const allOrgs = await this.prisma.organization.findMany({
         where: { deletedAt: null },
@@ -24,6 +23,10 @@ export class OrganizationsService {
           instagramHandle: true,
           status: true,
           createdAt: true,
+          instagramAccounts: {
+            where: { status: 'active' },
+            select: { id: true, username: true },
+          },
         },
       });
       return allOrgs.map((org) => ({
@@ -48,6 +51,10 @@ export class OrganizationsService {
             instagramHandle: true,
             status: true,
             createdAt: true,
+            instagramAccounts: {
+              where: { status: 'active' },
+              select: { id: true, username: true },
+            },
           },
         },
       },
@@ -57,8 +64,7 @@ export class OrganizationsService {
       organization: m.organization,
       role: m.role,
       joinedAt: m.createdAt,
-    }));
-  }
+    }));  }
 
   async getDashboardSummary(orgId: string) {
     const organization = await this.prisma.organization.findUnique({
