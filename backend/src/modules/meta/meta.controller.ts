@@ -1,8 +1,12 @@
 import {
   Controller,
   Get,
+  Post,
   Query,
   Param,
+  Headers,
+  Req,
+  Body,
   UseGuards,
   ForbiddenException,
   Res,
@@ -99,5 +103,57 @@ export class MetaController {
   @Get('accounts/:id/follower-growth')
   async getFollowerGrowth(@Param('id') id: string) {
     return this.metaService.getFollowerGrowth(id);
+  }
+
+  @Public()
+  @Get('webhook')
+  async verifyWebhook(
+    @Query('hub.mode') mode: string,
+    @Query('hub.verify_token') token: string,
+    @Query('hub.challenge') challenge: string,
+    @Res() res: express.Response,
+  ) {
+    const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN || 'my-secure-verify-token';
+    if (mode === 'subscribe' && token === verifyToken) {
+      console.log('Meta webhook verification successful.');
+      return res.status(200).send(challenge);
+    } else {
+      console.error('Meta webhook verification failed: Token mismatch.');
+      return res.status(403).send('Verification token mismatch.');
+    }
+  }
+
+  @Public()
+  @Post('webhook')
+  async handleWebhookEvent(
+    @Headers('x-hub-signature-256') signature: string,
+    @Req() req: any,
+    @Res() res: express.Response,
+  ) {
+    const appSecret = process.env.META_APP_SECRET || 'mock-meta-app-secret';
+
+    if (signature && req.rawBody) {
+      const crypto = require('crypto');
+      const parts = signature.split('=');
+      if (parts.length === 2 && parts[0] === 'sha256') {
+        const signatureHash = parts[1];
+        const expectedHash = crypto
+          .createHmac('sha256', appSecret)
+          .update(req.rawBody)
+          .digest('hex');
+
+        const sigBuffer = Buffer.from(signatureHash, 'hex');
+        const expectedBuffer = Buffer.from(expectedHash, 'hex');
+
+        if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+          console.error('Meta webhook signature validation failed.');
+          return res.status(401).send('Signature verification failed.');
+        }
+      }
+    }
+
+    console.log('Received Meta Webhook Event Notification:', JSON.stringify(req.body, null, 2));
+
+    return res.status(200).send('EVENT_RECEIVED');
   }
 }

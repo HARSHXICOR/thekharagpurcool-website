@@ -502,6 +502,20 @@ export class MetaService implements OnModuleInit {
           console.error('Capability probing failed during link:', probeErr);
         }
 
+        // 4.1. Subscribe app to the Instagram account webhooks (Step 3 of Meta requirements)
+        try {
+          const subscribeUrl = `https://graph.instagram.com/v25.0/${instagramUserId}/subscribed_apps?subscribed_fields=comments,live_comments&access_token=${longToken}`;
+          const subscribeRes = await fetch(subscribeUrl, { method: 'POST' });
+          if (subscribeRes.ok) {
+            console.log(`Successfully subscribed webhooks for Instagram account ${instagramUserId}`);
+          } else {
+            const err = await subscribeRes.json();
+            console.error(`Failed to subscribe webhooks for Instagram account ${instagramUserId}:`, err);
+          }
+        } catch (subErr) {
+          console.error(`Error during webhook subscription call for ${instagramUserId}:`, subErr);
+        }
+
         targetAccountId = account.id;
 
         // Fetch the updated capability record from database
