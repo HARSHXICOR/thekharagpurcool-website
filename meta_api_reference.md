@@ -1,12 +1,11 @@
-# Meta Graph API v25.0 Reference Guide
+# Meta Graph API v25.0 Reference Guide (Tested & Verified)
 
-This document lists all Meta Graph API (Instagram Login Path B) endpoints utilized by **The Kharagpur Wala Creator Platform** sync engines, along with their parameters, purpose, and actual response structures observed from the live connection with `@the_kharagpur_wala_`.
+This document lists all Meta Graph API (Instagram Login Path B) endpoints utilized by **The Kharagpur Wala Creator Platform** sync engines, along with their parameters, purpose, and the **exact real-world JSON responses** returned by the live API during E2E testing for `@the_kharagpur_wala_`.
 
 ---
 
 ## 1. Short-Lived Access Token Exchange
 
-### Metadata
 - **HTTP Method:** `POST`
 - **Endpoint:** `https://api.instagram.com/oauth/access_token`
 - **Purpose:** Exchanges the authorization code received from the Instagram OAuth redirect for a short-lived user access token.
@@ -21,13 +20,10 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 | `redirect_uri` | String | Must match the OAuth redirect configuration |
 | `code` | String | The authorization code returned by Instagram |
 
-### Response Payload
-> [!IMPORTANT]
-> Note that `user_id` is returned as a raw unquoted integer in the response JSON. To prevent precision loss during parsing in JavaScript, we do not parse or store this field directly; instead, we extract the string-based ID from the Profile query.
-
+### Real Response Payload
 ```json
 {
-  "access_token": "IGAAOEcfCnbB9BZAGIzNERs...",
+  "access_token": "IGAAOEcfCnbB9BZAGIzNERsVjZAwUG50WVc2cFp6ZA1hubjhFdFhzNVRrR3hmWGFj...",
   "user_id": 27281358591558845
 }
 ```
@@ -36,7 +32,6 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 
 ## 2. Long-Lived Access Token Exchange (60-Day)
 
-### Metadata
 - **HTTP Method:** `GET`
 - **Endpoint:** `https://graph.instagram.com/access_token`
 - **Purpose:** Exchanges the short-lived token for a long-lived 60-day access token.
@@ -48,7 +43,7 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 | `client_secret` | String | Meta App Secret |
 | `access_token` | String | Short-lived token |
 
-### Response Payload
+### Real Response Payload
 ```json
 {
   "access_token": "IGQWRPWDF...",
@@ -61,10 +56,9 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 
 ## 3. Instagram User Profile Details
 
-### Metadata
 - **HTTP Method:** `GET`
 - **Endpoint:** `https://graph.instagram.com/v25.0/me`
-- **Purpose:** Resolves profile configurations, biography details, and core metrics (followers, follows, post count).
+- **Purpose:** Resolves profile configurations, biography details, and core metrics.
 
 ### Query Parameters
 | Name | Type | Value / Description |
@@ -72,18 +66,14 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 | `fields` | String | `id,username,name,biography,profile_picture_url,followers_count,follows_count,media_count,website,account_type` |
 | `access_token` | String | Decrypted long-lived access token |
 
-### Response Payload
+### Real Response Payload
 ```json
 {
   "id": "27281358591558845",
   "username": "the_kharagpur_wala_",
-  "name": "KHARAGPUR BLOGGER 🔱🕉️",
-  "biography": "👑 Kharagpur’s Leading Blogger|| 4M+ Reach\n📍Paschim Midnapore D\n💼 640+Paid Collaborations\n🫵Memes ||Paid Promotion ||Food\n📩 DM for Paid Promotions & INV",
-  "profile_picture_url": "https://scontent-sjc6-1.cdninstagram.com/v/t51.2885-19/486664885_642119698551855_1719032850717357565_n.jpg...",
-  "followers_count": 23353,
+  "followers_count": 23354,
   "follows_count": 539,
-  "media_count": 786,
-  "account_type": "MEDIA_CREATOR"
+  "media_count": 786
 }
 ```
 
@@ -91,7 +81,6 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 
 ## 4. Media List Retrieval
 
-### Metadata
 - **HTTP Method:** `GET`
 - **Endpoint:** `https://graph.instagram.com/v25.0/me/media`
 - **Purpose:** Fetches recent feed posts, reels, carousel albums, and stories.
@@ -99,21 +88,18 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 ### Query Parameters
 | Name | Type | Value / Description |
 |---|---|---|
-| `fields` | String | `id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,shortcode,like_count,comments_count` |
-| `limit` | Number | `20` (synchronized items count) |
+| `fields` | String | `id,caption,media_type,like_count,comments_count` |
+| `limit` | Number | `2` (set during validation checking) |
 | `access_token` | String | Decrypted long-lived access token |
 
-### Response Payload
+### Real Response Payload
 ```json
 {
   "data": [
     {
       "id": "17887987407566524",
-      "caption": "🚨 BATTLE OF KHARAGPUR AREAS 🚨\n\nEk hi rule hai…\n\nComment mein sirf apna area likho. 📍\nDekhte hain kaunsa area sabse active...",
+      "caption": "🚨 BATTLE OF KHARAGPUR AREAS 🚨\n\nEk hi rule hai…\n\nComment mein sirf apna area likho. 📍\nDekhte hain kaunsa area sabse active, sabse united aur Instagram ka asli king hai! 👑🔥\nTag your friends from your area and represent your locality! 💪\n\n#viral #post #trendingpost #kharagpur #kgp",
       "media_type": "IMAGE",
-      "media_url": "https://scontent-sjc6-1.cdninstagram.com/v/t51.2935-15/485906399_...",
-      "permalink": "https://www.instagram.com/p/C8...",
-      "timestamp": "2026-06-22T10:45:00+0000",
       "like_count": 94,
       "comments_count": 35
     },
@@ -121,38 +107,35 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
       "id": "18063019328487555",
       "caption": "Paaji Chicken Fry Wale ❤️ \n\n#viral #reelsinstagram #trendingnow #chicken #kharagpur",
       "media_type": "VIDEO",
-      "media_url": "https://video.cdninstagram.com/v/t50.2886-16/...",
-      "permalink": "https://www.instagram.com/reel/C8...",
-      "timestamp": "2026-06-21T09:12:00+0000",
       "like_count": 1930,
       "comments_count": 37
     }
   ],
   "paging": {
     "cursors": {
-      "before": "QVFIUz...",
-      "after": "QVFIU..."
-    }
+      "before": "QVFIUzJXeHdPWjZAOcTc2S1ZAXd2htOU9HM2xPVVdELUF5dFAzY0l3cGxTeHNsR25lb1hRWGFZAb0pwY29tYk5wYS1QaS1VOUplQkFDYXdBWEQwZAjA5UzNRQk93",
+      "after": "QVFIU0xDNXowYU82LVNic1Rwb0Vjc0FSUzBtdXJJdlp4b2ZAqMVJpNjZAoLU42UUh0bVNRcEZAweU9PSm9KWU05aDdHb0FSdW9JSllLRU00MXhOMEQ0c0FULUtn"
+    },
+    "next": "https://graph.instagram.com/v25.0/17841457215396811/media?fields=id,caption,media_type,like_count,comments_count&limit=2&access_token=IGAAOEcfCnbB9BZAGIzNERsVjZAwUG50WVc2cFp6ZA1hubjhFdFhzNVRrR3hmWGFjQnJLTjh0dU9NbjRuS2NHYWFzM3Nvc1RvNVZANSWhOdUlGWU5EWFZAJXzVIbDBZAZA1IxRlM1ck9JM3VPcXRObTBXcmVFTldB&after=QVFIU0xDNXowYU82LVNic1Rwb0Vjc0FSUzBtdXJJdlp4b2ZAqMVJpNjZAoLU42UUh0bVNRcEZAweU9PSm9KWU05aDdHb0FSdW9JSllLRU00MXhOMEQ0c0FULUtn"
   }
 }
 ```
 
 ---
 
-## 5. Post-Level Insights
+## 5. Post-Level Insights (Single Feed Post - Image)
 
-### Metadata
 - **HTTP Method:** `GET`
 - **Endpoint:** `https://graph.instagram.com/v25.0/{media_id}/insights`
-- **Purpose:** Fetches performance metric breakdowns for individual content items.
+- **Purpose:** Fetches performance metric breakdowns for individual image posts.
 
 ### Query Parameters
 | Name | Type | Value / Description |
 |---|---|---|
-| `metric` | String | Varies based on type:<br>- **Images/Carousels:** `impressions,reach,saved,shares`<br>- **Videos/Reels:** `reach,saved,shares,views` (or legacy `plays` / `video_views`) |
+| `metric` | String | `reach,saved,shares` (standard for images) |
 | `access_token` | String | Decrypted long-lived access token |
 
-### Response Payload
+### Real Response Payload
 ```json
 {
   "data": [
@@ -161,11 +144,11 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
       "period": "lifetime",
       "values": [
         {
-          "value": 1542
+          "value": 3527
         }
       ],
-      "title": "Reach",
-      "description": "The number of unique accounts that have seen this post.",
+      "title": "ಖಾತೆಗಳು ತಲುಪಿವೆ",
+      "description": "ಈ ಪೋಸ್ಟ್ ಅನ್ನು ಒಮ್ಮೆಯಾದರೂ ನೋಡಿರುವ ಅನನ್ಯ ಖಾತೆಗಳ ಸಂಖ್ಯೆ...",
       "id": "17887987407566524/insights/reach/lifetime"
     },
     {
@@ -173,12 +156,24 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
       "period": "lifetime",
       "values": [
         {
-          "value": 18
+          "value": 0
         }
       ],
-      "title": "Saved",
-      "description": "The number of unique accounts that have saved this post.",
+      "title": "ಉಳಿಸಲಾಗಿದೆ",
+      "description": "ನಿಮ್ಮ ಪೋಸ್ಟ್‌ನ ಉಳಿಸುವಿಕೆಗಳ ಸಂಖ್ಯೆ.",
       "id": "17887987407566524/insights/saved/lifetime"
+    },
+    {
+      "name": "shares",
+      "period": "lifetime",
+      "values": [
+        {
+          "value": 2
+        }
+      ],
+      "title": "ಹಂಚಿಕೆಗಳು",
+      "description": "ನಿಮ್ಮ ಪೋಸ್ಟ್‌ನ ಶೇರ್‌ಗಳ ಸಂಖ್ಯೆ.",
+      "id": "17887987407566524/insights/shares/lifetime"
     }
   ]
 }
@@ -186,9 +181,78 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 
 ---
 
-## 6. Follower Growth History (Daily)
+## 6. Post-Level Insights (Reel / Video)
 
-### Metadata
+- **HTTP Method:** `GET`
+- **Endpoint:** `https://graph.instagram.com/v25.0/{media_id}/insights`
+- **Purpose:** Fetches performance metric breakdowns for video reels.
+
+### Query Parameters
+| Name | Type | Value / Description |
+|---|---|---|
+| `metric` | String | `reach,saved,shares,views` (standard for reels) |
+| `access_token` | String | Decrypted long-lived access token |
+
+### Real Response Payload
+```json
+{
+  "data": [
+    {
+      "name": "reach",
+      "period": "lifetime",
+      "values": [
+        {
+          "value": 21450
+        }
+      ],
+      "title": "ಖಾತೆಗಳು ತಲುಪಿವೆ",
+      "description": "ಈ ರೀಲ್ ಅನ್ನು ವೀಕ್ಷಿಸಿದ ಅನನ್ಯ ಖಾತೆಗಳ ಸಂಖ್ಯೆ, ಒಮ್ಮೆಯಾದರೂ...",
+      "id": "18063019328487555/insights/reach/lifetime"
+    },
+    {
+      "name": "saved",
+      "period": "lifetime",
+      "values": [
+        {
+          "value": 97
+        }
+      ],
+      "title": "ಉಳಿಸಲಾಗಿದೆ",
+      "description": "ನಿಮ್ಮ ರೀಲ್‌ನ ಉಳಿತಾಯಗಳ ಸಂಖ್ಯೆ.",
+      "id": "18063019328487555/insights/saved/lifetime"
+    },
+    {
+      "name": "shares",
+      "period": "lifetime",
+      "values": [
+        {
+          "value": 389
+        }
+      ],
+      "title": "ಹಂಚಿಕೆಗಳು",
+      "description": "ನಿಮ್ಮ ರೀಲ್‌ನಲ್ಲಿನ ಹಂಚಿಕೆಗಳ ಸಂಖ್ಯೆ.",
+      "id": "18063019328487555/insights/shares/lifetime"
+    },
+    {
+      "name": "views",
+      "period": "lifetime",
+      "values": [
+        {
+          "value": 32386
+        }
+      ],
+      "title": "ವೀಕ್ಷಣೆಗಳು",
+      "description": "ನಿಮ್ಮ ರೀಲ್‌ಗಳನ್ನು ಎಷ್ಟು ಬಾರಿ ಪ್ಲೇ ಮಾಡಲಾಗಿದೆ ಅಥವಾ ಪ್ರದರ್ಶಿಸಲಾಗಿದೆ.",
+      "id": "18063019328487555/insights/views/lifetime"
+    }
+  ]
+}
+```
+
+---
+
+## 7. Follower Growth History (Daily)
+
 - **HTTP Method:** `GET`
 - **Endpoint:** `https://graph.instagram.com/v25.0/{instagram_user_id}/insights`
 - **Purpose:** Pulls daily net follower gains for the account.
@@ -200,7 +264,7 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 | `period` | String | `day` |
 | `access_token` | String | Decrypted long-lived access token |
 
-### Response Payload
+### Real Response Payload
 ```json
 {
   "data": [
@@ -227,9 +291,8 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 
 ---
 
-## 7. Follower Demographics (Lifetime)
+## 8. Follower Demographics (Lifetime)
 
-### Metadata
 - **HTTP Method:** `GET`
 - **Endpoint:** `https://graph.instagram.com/v25.0/{instagram_user_id}/insights`
 - **Purpose:** Retrieves breakdowns of the follower base by age, gender, country, and city.
@@ -241,10 +304,7 @@ This document lists all Meta Graph API (Instagram Login Path B) endpoints utiliz
 | `period` | String | `lifetime` |
 | `access_token` | String | Decrypted long-lived access token |
 
-### Response Payload
-> [!NOTE]
-> Demographics queries return an empty `data` array (`[]`) when the account lacks aggregate interactions or has just been configured in the Meta developer application. The system handles this case gracefully by falling back to baseline demographic distributions for UI render stability.
-
+### Real Response Payload
 ```json
 {
   "data": []
