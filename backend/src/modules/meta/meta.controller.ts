@@ -94,4 +94,10 @@ export class MetaController {
   async getDemographics(@Param('id') id: string) {
     return this.metaService.getDemographics(id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('accounts/:id/follower-growth')
+  async getFollowerGrowth(@Param('id') id: string) {
+    return this.metaService.getFollowerGrowth(id);
+  }
 }

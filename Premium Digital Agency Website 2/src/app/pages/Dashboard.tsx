@@ -54,12 +54,32 @@ export function Dashboard() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [instagramAccount, setInstagramAccount] = useState<any>(null);
   const [instagramMedia, setInstagramMedia] = useState<any[]>([]);
-  const [instagramDemographics, setInstagramDemographics] = useState<any[]>([
-    { name: "18-24", value: 28 },
-    { name: "25-34", value: 42 },
-    { name: "35-44", value: 20 },
-    { name: "45+", value: 10 },
-  ]);
+  const [selectedDemoTab, setSelectedDemoTab] = useState<"age" | "gender" | "country" | "city">("age");
+  const [followerGrowthData, setFollowerGrowthData] = useState<any[]>([]);
+  const [instagramDemographics, setInstagramDemographics] = useState<any>({
+    age: [
+      { name: "18-24", value: 28 },
+      { name: "25-34", value: 42 },
+      { name: "35-44", value: 20 },
+      { name: "45+", value: 10 },
+    ],
+    gender: [
+      { name: "Male", value: 45 },
+      { name: "Female", value: 55 },
+    ],
+    country: [
+      { name: "India", value: 70 },
+      { name: "United States", value: 15 },
+      { name: "UAE", value: 10 },
+      { name: "Others", value: 5 },
+    ],
+    city: [
+      { name: "Kharagpur", value: 45 },
+      { name: "Kolkata", value: 30 },
+      { name: "Midnapore", value: 15 },
+      { name: "Others", value: 10 },
+    ],
+  });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [connectingInstagram, setConnectingInstagram] = useState(false);
 
@@ -147,18 +167,44 @@ export function Dashboard() {
               // Load demographics
               const demoRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/demographics`);
               if (demoRes.ok) {
-                const demoList = await demoRes.json();
-                setInstagramDemographics(demoList || []);
+                const demoData = await demoRes.json();
+                setInstagramDemographics(demoData);
+              }
+
+              // Load follower growth
+              const growthRes = await fetchWithAuth(`/api/meta/accounts/${activeAccount.id}/follower-growth`);
+              if (growthRes.ok) {
+                const growthData = await growthRes.json();
+                setFollowerGrowthData(growthData || []);
               }
             } else {
               setInstagramAccount(null);
               setInstagramMedia([]);
-              setInstagramDemographics([
-                { name: "18-24", value: 28 },
-                { name: "25-34", value: 42 },
-                { name: "35-44", value: 20 },
-                { name: "45+", value: 10 },
-              ]);
+              setFollowerGrowthData([]);
+              setInstagramDemographics({
+                age: [
+                  { name: "18-24", value: 28 },
+                  { name: "25-34", value: 42 },
+                  { name: "35-44", value: 20 },
+                  { name: "45+", value: 10 },
+                ],
+                gender: [
+                  { name: "Male", value: 45 },
+                  { name: "Female", value: 55 },
+                ],
+                country: [
+                  { name: "India", value: 70 },
+                  { name: "United States", value: 15 },
+                  { name: "UAE", value: 10 },
+                  { name: "Others", value: 5 },
+                ],
+                city: [
+                  { name: "Kharagpur", value: 45 },
+                  { name: "Kolkata", value: 30 },
+                  { name: "Midnapore", value: 15 },
+                  { name: "Others", value: 10 },
+                ],
+              });
             }
           }
         }
@@ -223,14 +269,16 @@ export function Dashboard() {
   }
 
   const actualFollowers = instagramAccount ? (instagramAccount.followersCount || 23500) : 23500;
-  const followerGrowth = [
-    { month: "Oct", followers: Math.round(actualFollowers * 0.05), engagement: 4.1 },
-    { month: "Nov", followers: Math.round(actualFollowers * 0.19), engagement: 5.5 },
-    { month: "Dec", followers: Math.round(actualFollowers * 0.39), engagement: 6.2 },
-    { month: "Jan", followers: Math.round(actualFollowers * 0.60), engagement: 7.8 },
-    { month: "Feb", followers: Math.round(actualFollowers * 0.79), engagement: 8.1 },
-    { month: "Mar", followers: actualFollowers, engagement: Number(engagementRateVal.toFixed(1)) },
-  ];
+  const followerGrowth = followerGrowthData.length > 0
+    ? followerGrowthData
+    : [
+        { month: "Oct", followers: Math.round(actualFollowers * 0.05), engagement: 4.1 },
+        { month: "Nov", followers: Math.round(actualFollowers * 0.19), engagement: 5.5 },
+        { month: "Dec", followers: Math.round(actualFollowers * 0.39), engagement: 6.2 },
+        { month: "Jan", followers: Math.round(actualFollowers * 0.60), engagement: 7.8 },
+        { month: "Feb", followers: Math.round(actualFollowers * 0.79), engagement: 8.1 },
+        { month: "Mar", followers: actualFollowers, engagement: Number(engagementRateVal.toFixed(1)) },
+      ];
 
   const getContentPerformance = () => {
     if (instagramMedia && instagramMedia.length > 0) {
@@ -447,6 +495,101 @@ export function Dashboard() {
         engagement: "8.6%",
       },
     ];
+  };
+
+  const getFreshnessLabel = () => {
+    if (!instagramAccount?.lastSuccessfulSyncAt) return "";
+    const lastSync = new Date(instagramAccount.lastSuccessfulSyncAt);
+    const diffMs = Date.now() - lastSync.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return "just now";
+    if (diffMins === 1) return "1 minute ago";
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours === 1) return "1 hour ago";
+    return `${diffHours} hours ago`;
+  };
+
+  const renderSyncStatus = () => {
+    if (!instagramAccount) {
+      return (
+        <div className="flex flex-col sm:flex-row items-center gap-3 px-5 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold shadow-lg max-w-2xl text-center sm:text-left">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="text-purple-400 animate-pulse flex-shrink-0" />
+            <span>Mock Preview Mode. Connect your Instagram profile to sync live creator metrics.</span>
+          </div>
+          {organizations && organizations.length > 0 && (
+            <button
+              onClick={handleConnectInstagram}
+              disabled={connectingInstagram}
+              className="px-4 py-1.5 rounded-full gradient-purple-teal hover:glow-purple text-[10px] font-bold uppercase tracking-wider text-white transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Instagram size={12} />
+              {connectingInstagram ? "Connecting..." : "Connect Instagram"}
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    const freshness = getFreshnessLabel();
+    const status = instagramAccount.syncStatus || "LIVE";
+
+    if (status === "SYNCING") {
+      return (
+        <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-semibold shadow-lg">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+          </span>
+          <span>Syncing New Data for <strong>@{instagramAccount.username}</strong>...</span>
+        </div>
+      );
+    }
+
+    if (status === "PARTIAL") {
+      return (
+        <div className="inline-flex flex-col items-center gap-2">
+          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold shadow-lg">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+            </span>
+            <span>Partial Instagram Sync: <strong>@{instagramAccount.username}</strong> {freshness && `(Synced ${freshness})`}</span>
+          </div>
+          <span className="text-[10px] text-gray-500 italic">Certain demographics or insights are restricted by follower thresholds.</span>
+        </div>
+      );
+    }
+
+    if (status === "ERROR") {
+      return (
+        <div className="inline-flex flex-col items-center gap-2">
+          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold shadow-lg">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 animate-pulse"></span>
+            </span>
+            <span>Sync Error: <strong>@{instagramAccount.username}</strong></span>
+          </div>
+          {instagramAccount.lastSyncError && (
+            <span className="text-[10px] text-red-400/80 font-mono bg-red-500/5 px-3 py-1 rounded-lg border border-red-500/10 max-w-md text-center">
+              Error: {instagramAccount.lastSyncError}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    // Default LIVE
+    return (
+      <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-semibold shadow-lg">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500"></span>
+        </span>
+        <span>Live Instagram Sync Active: <strong>@{instagramAccount.username}</strong> {freshness && `(Synced ${freshness})`}</span>
+      </div>
+    );
   };
 
   return (
@@ -712,32 +855,7 @@ export function Dashboard() {
             <div className="container mx-auto px-4">
               {/* Live Sync Status Banner */}
               <div className="mb-6 flex flex-col items-center gap-4">
-                {instagramAccount ? (
-                  <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-semibold shadow-lg">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500"></span>
-                    </span>
-                    <span>Live Instagram Sync Active: <strong>@{instagramAccount.username}</strong></span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col sm:flex-row items-center gap-3 px-5 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold shadow-lg max-w-2xl text-center sm:text-left">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle size={16} className="text-purple-400 animate-pulse flex-shrink-0" />
-                      <span>Mock Preview Mode. Connect your Instagram profile to sync live creator metrics.</span>
-                    </div>
-                    {organizations && organizations.length > 0 && (
-                      <button
-                        onClick={handleConnectInstagram}
-                        disabled={connectingInstagram}
-                        className="px-4 py-1.5 rounded-full gradient-purple-teal hover:glow-purple text-[10px] font-bold uppercase tracking-wider text-white transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <Instagram size={12} />
-                        {connectingInstagram ? "Connecting..." : "Connect Instagram"}
-                      </button>
-                    )}
-                  </div>
-                )}
+                {renderSyncStatus()}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -948,38 +1066,102 @@ export function Dashboard() {
                   viewport={{ once: true }}
                   className="glass rounded-2xl p-6"
                 >
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
                       <h3 className="text-xl mb-1">Audience Demographics</h3>
-                      <p className="text-sm text-gray-400">Age distribution</p>
+                      <p className="text-sm text-gray-400 capitalize">{selectedDemoTab} distribution</p>
                     </div>
-                    <Users size={24} className="text-purple-400" />
-                  </div>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={instagramDemographics}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, value }) => `${name}: ${value}%`}
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
+                    
+                    {/* Tab Navigation */}
+                    <div className="flex gap-2 bg-[#12121a] p-1 rounded-xl border border-white/5">
+                      <button
+                        onClick={() => setSelectedDemoTab("age")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          selectedDemoTab === "age" ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "text-gray-400 hover:text-gray-200"
+                        }`}
                       >
-                        {instagramDemographics.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "rgba(26, 26, 36, 0.9)",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          borderRadius: "8px",
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                        Age
+                      </button>
+                      <button
+                        onClick={() => setSelectedDemoTab("gender")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          selectedDemoTab === "gender" ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "text-gray-400 hover:text-gray-200"
+                        }`}
+                      >
+                        Gender
+                      </button>
+                      {(!instagramAccount || instagramAccount.supportsCountryBreakdown) && (
+                        <button
+                          onClick={() => setSelectedDemoTab("country")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            selectedDemoTab === "country" ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "text-gray-400 hover:text-gray-200"
+                          }`}
+                        >
+                          Country
+                        </button>
+                      )}
+                      {(!instagramAccount || instagramAccount.supportsCityBreakdown) && (
+                        <button
+                          onClick={() => setSelectedDemoTab("city")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            selectedDemoTab === "city" ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "text-gray-400 hover:text-gray-200"
+                          }`}
+                        >
+                          City
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {instagramAccount && !instagramAccount.supportsDemographics ? (
+                    <div className="h-[300px] flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-xl border border-white/5 animate-in fade-in duration-350">
+                      <Users size={40} className="text-gray-600 mb-3" />
+                      <p className="text-sm font-semibold text-gray-400">Audience Demographics Restricted</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-sm">Meta requires a professional account with at least 100 followers to disclose demographics insights.</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      {selectedDemoTab === "age" || selectedDemoTab === "gender" ? (
+                        <PieChart>
+                          <Pie
+                            data={instagramDemographics[selectedDemoTab] || []}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, value }) => `${name}: ${value}%`}
+                            outerRadius={90}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {(instagramDemographics[selectedDemoTab] || []).map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "rgba(26, 26, 36, 0.9)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: "8px",
+                            }}
+                          />
+                        </PieChart>
+                      ) : (
+                        <BarChart data={instagramDemographics[selectedDemoTab] || []} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                          <XAxis type="number" stroke="#999" unit="%" />
+                          <YAxis dataKey="name" type="category" stroke="#999" width={100} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "rgba(26, 26, 36, 0.9)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: "8px",
+                            }}
+                          />
+                          <Bar dataKey="value" fill="#14b8a6" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  )}
                 </motion.div>
               </div>
             </div>

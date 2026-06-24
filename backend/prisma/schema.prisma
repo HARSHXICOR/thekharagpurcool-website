@@ -518,10 +518,28 @@ model InstagramAccount {
   updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt           DateTime?    @map("deleted_at") @db.Timestamptz
 
+  // Capability Probing columns
+  supportsDemographics                Boolean            @default(false) @map("supports_demographics")
+  supportsCountryBreakdown            Boolean            @default(false) @map("supports_country_breakdown")
+  supportsCityBreakdown               Boolean            @default(false) @map("supports_city_breakdown")
+  supportsHistoricalFollowerInsights  Boolean            @default(false) @map("supports_historical_follower_insights")
+  videoMetricType                     VideoMetricType?   @map("video_metric_type")
+  syncStatus                          SyncStatus         @default(DEMO) @map("sync_status")
+
+  // Sync Observability metrics
+  lastSuccessfulSyncAt                DateTime?          @map("last_successful_sync_at") @db.Timestamptz
+  lastSyncAttemptAt                   DateTime?          @map("last_sync_attempt_at") @db.Timestamptz
+  lastSyncError                       String?            @map("last_sync_error")
+
   organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   tokens              InstagramToken[]
   media               InstagramMedia[]
-  audienceInsights    InstagramAudienceInsight[]
+  
+  // Snapshots & Rollups Relations
+  followerSnapshots         InstagramFollowerSnapshot[]
+  audienceSnapshots         InstagramAudienceSnapshot[]
+  followerMonthlySnapshots  InstagramFollowerMonthlySnapshot[]
+  audienceMonthlySnapshots  InstagramAudienceMonthlySnapshot[]
 
   @@unique([organizationId, instagramUserId])
   @@index([organizationId, status])
@@ -612,17 +630,88 @@ model InstagramMediaMetric {
   @@map("instagram_media_metrics")
 }
 
-model InstagramAudienceInsight {
+// ==========================================
+// 8. Meta / Instagram Snapshots, Rollups & Enums
+// ==========================================
+
+enum AudienceBreakdownType {
+  AGE_GENDER
+  COUNTRY
+  CITY
+}
+
+enum VideoMetricType {
+  VIEWS
+  PLAYS
+  VIDEO_VIEWS
+}
+
+enum SyncStatus {
+  LIVE
+  SYNCING
+  PARTIAL
+  ERROR
+  DEMO
+}
+
+model InstagramFollowerSnapshot {
   id                 String           @id @default(uuid()) @db.Uuid
   instagramAccountId String           @map("instagram_account_id") @db.Uuid
-  insightType        String           @map("insight_type") @db.VarChar(50) // e.g. age_gender, country, city
-  metricDate         DateTime         @map("metric_date") @db.Date
-  breakdownValues    Json             @map("breakdown_values")
+  followersCount     Int              @map("followers_count")
+  followsCount       Int              @map("follows_count")
+  mediaCount         Int              @map("media_count")
+  snapshotDate       DateTime         @map("snapshot_date") @db.Date
   createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz
 
   instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
 
-  @@unique([instagramAccountId, insightType, metricDate])
-  @@index([instagramAccountId, insightType, metricDate(sort: Desc)])
-  @@map("instagram_audience_insights")
+  @@unique([instagramAccountId, snapshotDate])
+  @@map("instagram_follower_snapshots")
+}
+
+model InstagramAudienceSnapshot {
+  id                 String                @id @default(uuid()) @db.Uuid
+  instagramAccountId String                @map("instagram_account_id") @db.Uuid
+  breakdownType      AudienceBreakdownType @map("breakdown_type")
+  key                String                @db.VarChar(120) // e.g. "18-24", "IN", "Kolkata"
+  value              Int
+  snapshotDate       DateTime              @map("snapshot_date") @db.Date
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz
+
+  instagramAccount   InstagramAccount      @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([instagramAccountId, breakdownType, key, snapshotDate])
+  @@map("instagram_audience_snapshots")
+}
+
+model InstagramFollowerMonthlySnapshot {
+  id                 String           @id @default(uuid()) @db.Uuid
+  instagramAccountId String           @map("instagram_account_id") @db.Uuid
+  followersCount     Int              @map("followers_count")
+  followsCount       Int              @map("follows_count")
+  mediaCount         Int              @map("media_count")
+  year               Int
+  month              Int
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([instagramAccountId, year, month])
+  @@map("instagram_follower_monthly_snapshots")
+}
+
+model InstagramAudienceMonthlySnapshot {
+  id                 String                @id @default(uuid()) @db.Uuid
+  instagramAccountId String                @map("instagram_account_id") @db.Uuid
+  breakdownType      AudienceBreakdownType @map("breakdown_type")
+  key                String                @db.VarChar(120)
+  value              Int
+  year               Int
+  month              Int
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz
+
+  instagramAccount   InstagramAccount      @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([instagramAccountId, breakdownType, key, year, month])
+  @@map("instagram_audience_monthly_snapshots")
 }
