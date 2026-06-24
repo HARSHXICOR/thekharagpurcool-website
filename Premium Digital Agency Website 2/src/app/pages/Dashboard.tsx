@@ -89,12 +89,6 @@ export function Dashboard() {
     }
   };
 
-  const handleOrgChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newOrgId = e.target.value;
-    setSelectedOrgId(newOrgId);
-    loadCreatorAnalytics(newOrgId);
-    loadClientCampaigns(newOrgId);
-  };
 
   // Security guard
   useEffect(() => {
@@ -104,11 +98,10 @@ export function Dashboard() {
   }, [user, isLoading, router]);
 
   // Load Client Campaigns and deliverables details
-  const loadClientCampaigns = useCallback(async (orgIdOverride?: string) => {
+  const loadClientCampaigns = useCallback(async () => {
     setLoadingCampaigns(true);
     try {
-      const orgId = orgIdOverride || selectedOrgId;
-      const url = orgId ? `/api/admin/campaigns?orgId=${orgId}` : "/api/admin/campaigns";
+      const url = "/api/admin/campaigns";
       const response = await fetchWithAuth(url);
       if (!response.ok) {
         throw new Error("Failed to load campaigns.");
@@ -132,7 +125,7 @@ export function Dashboard() {
     } finally {
       setLoadingCampaigns(false);
     }
-  }, [fetchWithAuth, selectedOrgId]);
+  }, [fetchWithAuth]);
 
   // Load live Meta/Instagram sync data
   const loadCreatorAnalytics = useCallback(async (orgIdOverride?: string) => {
