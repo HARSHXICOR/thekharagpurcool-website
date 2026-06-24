@@ -60,28 +60,10 @@ export function Dashboard() {
   const [selectedDemoTab, setSelectedDemoTab] = useState<"age" | "gender" | "country" | "city">("age");
   const [followerGrowthData, setFollowerGrowthData] = useState<any[]>([]);
   const [instagramDemographics, setInstagramDemographics] = useState<any>({
-    age: [
-      { name: "18-24", value: 28 },
-      { name: "25-34", value: 42 },
-      { name: "35-44", value: 20 },
-      { name: "45+", value: 10 },
-    ],
-    gender: [
-      { name: "Male", value: 45 },
-      { name: "Female", value: 55 },
-    ],
-    country: [
-      { name: "India", value: 70 },
-      { name: "United States", value: 15 },
-      { name: "UAE", value: 10 },
-      { name: "Others", value: 5 },
-    ],
-    city: [
-      { name: "Kharagpur", value: 45 },
-      { name: "Kolkata", value: 30 },
-      { name: "Midnapore", value: 15 },
-      { name: "Others", value: 10 },
-    ],
+    age: [],
+    gender: [],
+    country: [],
+    city: [],
   });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [connectingInstagram, setConnectingInstagram] = useState(false);
@@ -192,7 +174,7 @@ export function Dashboard() {
           if (accountsRes.ok) {
             const accountsList = await accountsRes.json();
             if (accountsList && accountsList.length > 0) {
-              const activeAccount = accountsList[0];
+              const activeAccount = accountsList.find((acc: any) => acc.username === 'the_kharagpur_wala_') || accountsList[0];
               setInstagramAccount(activeAccount);
 
               // Load media
@@ -220,28 +202,10 @@ export function Dashboard() {
               setInstagramMedia([]);
               setFollowerGrowthData([]);
               setInstagramDemographics({
-                age: [
-                  { name: "18-24", value: 28 },
-                  { name: "25-34", value: 42 },
-                  { name: "35-44", value: 20 },
-                  { name: "45+", value: 10 },
-                ],
-                gender: [
-                  { name: "Male", value: 45 },
-                  { name: "Female", value: 55 },
-                ],
-                country: [
-                  { name: "India", value: 70 },
-                  { name: "United States", value: 15 },
-                  { name: "UAE", value: 10 },
-                  { name: "Others", value: 5 },
-                ],
-                city: [
-                  { name: "Kharagpur", value: 45 },
-                  { name: "Kolkata", value: 30 },
-                  { name: "Midnapore", value: 15 },
-                  { name: "Others", value: 10 },
-                ],
+                age: [],
+                gender: [],
+                country: [],
+                city: [],
               });
             }
           }
@@ -288,7 +252,7 @@ export function Dashboard() {
   }
 
   // Dynamic calculations & formatters
-  let engagementRateVal = 8.9;
+  let engagementRateVal = 0;
   if (instagramAccount && instagramAccount.followersCount > 0 && instagramMedia && instagramMedia.length > 0) {
     const totalLikesAndComments = instagramMedia.reduce(
       (sum, item) => sum + (item.likeCount || 0) + (item.commentsCount || 0),
@@ -306,17 +270,9 @@ export function Dashboard() {
     });
   }
 
-  const actualFollowers = instagramAccount ? (instagramAccount.followersCount || 23500) : 23500;
   const followerGrowth = followerGrowthData.length > 0
     ? followerGrowthData
-    : [
-        { month: "Oct", followers: Math.round(actualFollowers * 0.05), engagement: 4.1 },
-        { month: "Nov", followers: Math.round(actualFollowers * 0.19), engagement: 5.5 },
-        { month: "Dec", followers: Math.round(actualFollowers * 0.39), engagement: 6.2 },
-        { month: "Jan", followers: Math.round(actualFollowers * 0.60), engagement: 7.8 },
-        { month: "Feb", followers: Math.round(actualFollowers * 0.79), engagement: 8.1 },
-        { month: "Mar", followers: actualFollowers, engagement: Number(engagementRateVal.toFixed(1)) },
-      ];
+    : [];
 
   const getContentPerformance = () => {
     if (instagramMedia && instagramMedia.length > 0) {
@@ -336,7 +292,7 @@ export function Dashboard() {
         else if (type === "VIDEO") category = "Reels";
 
         const metric = post.mediaMetrics && post.mediaMetrics.length > 0 ? post.mediaMetrics[0] : null;
-        const views = metric?.views || metric?.plays || (post.likeCount ? post.likeCount * 12 : 0) || 500;
+        const views = metric?.views || metric?.plays || (post.likeCount ? post.likeCount * 12 : 0) || 0;
         
         groups[category].posts += 1;
         groups[category].totalViews += views;
@@ -348,23 +304,18 @@ export function Dashboard() {
         const g = groups[key];
         const avgViews = g.posts > 0 ? Math.round(g.totalViews / g.posts) : 0;
         const avgLikesAndComments = g.posts > 0 ? (g.totalLikes + g.totalComments) / g.posts : 0;
-        const followers = instagramAccount?.followersCount || 23500;
+        const followers = instagramAccount?.followersCount || 0;
         const avgEngagement = followers > 0 ? (avgLikesAndComments / followers) * 100 : 0;
 
         return {
           type: key,
           posts: g.posts,
-          avgViews: avgViews || (key === "Reels" ? 125000 : key === "Carousels" ? 45000 : key === "Single Posts" ? 28000 : 18000),
-          avgEngagement: Number(avgEngagement.toFixed(1)) || (key === "Reels" ? 9.2 : key === "Carousels" ? 6.5 : key === "Single Posts" ? 4.8 : 3.2),
+          avgViews: avgViews || 0,
+          avgEngagement: Number(avgEngagement.toFixed(1)) || 0,
         };
       });
     }
-    return [
-      { type: "Reels", posts: 45, avgViews: 125000, avgEngagement: 9.2 },
-      { type: "Carousels", posts: 30, avgViews: 45000, avgEngagement: 6.5 },
-      { type: "Single Posts", posts: 25, avgViews: 28000, avgEngagement: 4.8 },
-      { type: "Stories", posts: 120, avgViews: 18000, avgEngagement: 3.2 },
-    ];
+    return [];
   };
 
   const contentPerformance = getContentPerformance();
@@ -373,8 +324,8 @@ export function Dashboard() {
     ? [...instagramMedia].slice(0, 5).reverse().map((post, index) => {
         const metric = post.mediaMetrics && post.mediaMetrics.length > 0 ? post.mediaMetrics[0] : null;
         const likes = post.likeCount || 0;
-        const fallbackReach = metric?.reach || (likes * 5) || 1200;
-        const fallbackImpressions = metric?.impressions || (likes * 7) || 1600;
+        const fallbackReach = metric?.reach || (likes * 5) || 0;
+        const fallbackImpressions = metric?.impressions || (likes * 7) || 0;
         const label = post.caption ? (post.caption.substring(0, 10) + "...") : `Post ${index + 1}`;
         return {
           week: label,
@@ -382,19 +333,7 @@ export function Dashboard() {
           impressions: fallbackImpressions,
         };
       })
-    : [
-        { week: "Week 1", reach: 950000, impressions: 1280000 },
-        { week: "Week 2", reach: 1020000, impressions: 1450000 },
-        { week: "Week 3", reach: 1080000, impressions: 1520000 },
-        { week: "Week 4", reach: 1150000, impressions: 1680000 },
-      ];
-
-  const audienceDemographics = [
-    { name: "18-24", value: 28 },
-    { name: "25-34", value: 42 },
-    { name: "35-44", value: 20 },
-    { name: "45+", value: 10 },
-  ];
+    : [];
 
   const COLORS = ["#a855f7", "#14b8a6", "#fbbf24", "#f472b6"];
 
@@ -485,19 +424,8 @@ export function Dashboard() {
           growthLabel = `${cat.count} Active Collab${cat.count !== 1 ? "s" : ""}`;
         }
       } else {
-        if (cat.title.includes("Automobile")) {
-          metricLabel = "1.8M+ Views";
-          growthLabel = "+280% Showroom Traffic";
-        } else if (cat.title.includes("Education")) {
-          metricLabel = "450K+ Reached";
-          growthLabel = "+320 New Enrollments";
-        } else if (cat.title.includes("Cafe")) {
-          metricLabel = "920K+ Impressions";
-          growthLabel = "+250% Weekend Footfall";
-        } else {
-          metricLabel = "1.1M+ Reach";
-          growthLabel = "+190% Seasonal Sales";
-        }
+        metricLabel = "0 Campaigns";
+        growthLabel = "No active campaigns";
       }
 
       return {
@@ -523,29 +451,29 @@ export function Dashboard() {
   const stats = [
     {
       label: "Total Followers",
-      value: instagramAccount ? formatNumber(instagramAccount.followersCount || 0) : "23.5K",
-      change: instagramAccount ? "Live" : "+233%",
+      value: instagramAccount ? formatNumber(instagramAccount.followersCount || 0) : "0",
+      change: instagramAccount ? "Live" : "Offline",
       icon: Users,
       color: "text-purple-400",
     },
     {
       label: "Engagement Rate",
-      value: engagementRateVal.toFixed(1) + "%",
-      change: instagramAccount ? "Live" : "+114%",
+      value: instagramAccount ? engagementRateVal.toFixed(1) + "%" : "0.0%",
+      change: instagramAccount ? "Live" : "Offline",
       icon: Heart,
       color: "text-pink-400",
     },
     {
       label: "Monthly Reach",
-      value: totalReach > 0 ? formatNumber(totalReach) : "4.2M",
-      change: instagramAccount ? "Live" : "+190%",
+      value: instagramAccount && totalReach > 0 ? formatNumber(totalReach) : "0",
+      change: instagramAccount ? "Live" : "Offline",
       icon: Eye,
       color: "text-teal-400",
     },
     {
       label: "Paid Collabs",
-      value: activeCampaigns.length > 0 ? activeCampaigns.length.toString() : (instagramAccount ? "0" : "600+"),
-      change: instagramAccount ? "Live" : "+85%",
+      value: activeCampaigns.length.toString(),
+      change: instagramAccount ? "Live" : "Offline",
       icon: DollarSign,
       color: "text-yellow-400",
     },
@@ -562,11 +490,11 @@ export function Dashboard() {
       return sorted.slice(0, 3).map((post) => {
         const likes = post.likeCount || 0;
         const comments = post.commentsCount || 0;
-        const followers = instagramAccount?.followersCount || 23500;
+        const followers = instagramAccount?.followersCount || 0;
         const postEngagement = followers > 0 ? ((likes + comments) / followers) * 100 : 0;
 
         const metric = post.mediaMetrics && post.mediaMetrics.length > 0 ? post.mediaMetrics[0] : null;
-        const viewsVal = metric?.views || metric?.plays || (likes * 12) || 1200;
+        const viewsVal = metric?.views || metric?.plays || (likes * 12) || 0;
 
         let typeLabel = "Post";
         if (post.mediaType === "REEL") typeLabel = "Reel";
@@ -584,32 +512,7 @@ export function Dashboard() {
       });
     }
 
-    return [
-      {
-        type: "Reel",
-        caption: "Exploring the best Street Food in Kharagpur 🍲🔥",
-        views: "245K",
-        likes: "18.5K",
-        comments: "342",
-        engagement: "9.2%",
-      },
-      {
-        type: "Meme",
-        caption: "Kharagpur local train struggles be like... 😂🚇",
-        views: "185K",
-        likes: "22.1K",
-        comments: "890",
-        engagement: "12.4%",
-      },
-      {
-        type: "Reel",
-        caption: "Local Brand Spotlight: Paschim Midnapore's new Cafe! ☕✨",
-        views: "198K",
-        likes: "14.8K",
-        comments: "267",
-        engagement: "8.6%",
-      },
-    ];
+    return [];
   };
 
   const getFreshnessLabel = () => {
@@ -632,7 +535,7 @@ export function Dashboard() {
         <div className="flex flex-col sm:flex-row items-center gap-3 px-5 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold shadow-lg max-w-2xl text-center sm:text-left">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="text-purple-400 animate-pulse flex-shrink-0" />
-            <span>Mock Preview Mode. Connect your Instagram profile to sync live creator metrics.</span>
+            <span>No Instagram profile connected. Connect your Instagram profile to sync live creator metrics.</span>
           </div>
           {organizations && organizations.length > 0 && (
             <button
@@ -973,22 +876,6 @@ export function Dashboard() {
                 <div className="flex-grow flex justify-center sm:justify-start">
                   {renderSyncStatus()}
                 </div>
-                {organizations.length > 1 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400 text-xs font-semibold">Active Business:</span>
-                    <select
-                      value={selectedOrgId || ""}
-                      onChange={handleOrgChange}
-                      className="bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-300 font-semibold focus:outline-none focus:border-purple-500/50 cursor-pointer"
-                    >
-                      {organizations.map((org: any) => (
-                        <option key={org.organization.id} value={org.organization.id} className="bg-[#0f0f15] text-gray-300">
-                          {org.organization.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1311,37 +1198,43 @@ export function Dashboard() {
               >
                 <h3 className="text-xl mb-6">Top Performing Posts (Last 30 Days)</h3>
                 <div className="space-y-4">
-                  {getTopPosts().map((post, index) => (
-                    <div
-                      key={index}
-                      className="glass-light rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="px-3 py-1 rounded-full glass text-xs">{post.type}</span>
-                          <span className="text-sm text-gray-300">{post.caption}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-6 text-sm">
-                        <div className="text-center">
-                          <div className="text-gray-400 text-xs mb-1">Views</div>
-                          <div>{post.views}</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-gray-400 text-xs mb-1">Likes</div>
-                          <div>{post.likes}</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-gray-400 text-xs mb-1">Comments</div>
-                          <div>{post.comments}</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-gray-400 text-xs mb-1">Engagement</div>
-                          <div className="text-green-400">{post.engagement}</div>
-                        </div>
-                      </div>
+                  {getTopPosts().length === 0 ? (
+                    <div className="text-center py-6 text-xs text-gray-500 italic">
+                      No posts found or Instagram account not synced.
                     </div>
-                  ))}
+                  ) : (
+                    getTopPosts().map((post, index) => (
+                      <div
+                        key={index}
+                        className="glass-light rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="px-3 py-1 rounded-full glass text-xs">{post.type}</span>
+                            <span className="text-sm text-gray-300">{post.caption}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-6 text-sm">
+                          <div className="text-center">
+                            <div className="text-gray-400 text-xs mb-1">Views</div>
+                            <div>{post.views}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-gray-400 text-xs mb-1">Likes</div>
+                            <div>{post.likes}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-gray-400 text-xs mb-1">Comments</div>
+                            <div>{post.comments}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-gray-400 text-xs mb-1">Engagement</div>
+                            <div className="text-green-400">{post.engagement}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </motion.div>
             </div>
