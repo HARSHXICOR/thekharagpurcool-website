@@ -1180,33 +1180,13 @@ export class MetaService implements OnModuleInit {
       orderBy: { snapshotDate: 'desc' },
     });
 
-    const defaultResponse = {
-      age: [
-        { name: "18-24", value: 28 },
-        { name: "25-34", value: 42 },
-        { name: "35-44", value: 20 },
-        { name: "45+", value: 10 },
-      ],
-      gender: [
-        { name: "Male", value: 45 },
-        { name: "Female", value: 55 },
-      ],
-      country: [
-        { name: "India", value: 70 },
-        { name: "United States", value: 15 },
-        { name: "UAE", value: 10 },
-        { name: "Others", value: 5 },
-      ],
-      city: [
-        { name: "Kharagpur", value: 45 },
-        { name: "Kolkata", value: 30 },
-        { name: "Midnapore", value: 15 },
-        { name: "Others", value: 10 },
-      ],
-    };
-
     if (snapshots.length === 0) {
-      return defaultResponse;
+      return {
+        age: [],
+        gender: [],
+        country: [],
+        city: [],
+      };
     }
 
     const latestDate = snapshots[0].snapshotDate;
@@ -1237,10 +1217,10 @@ export class MetaService implements OnModuleInit {
     ageList.sort((a, b) => ageOrder.indexOf(a.name) - ageOrder.indexOf(b.name));
 
     return {
-      age: ageList.length > 0 ? ageList : defaultResponse.age,
-      gender: genderList.length > 0 ? genderList : defaultResponse.gender,
-      country: countryList.length > 0 ? countryList : defaultResponse.country,
-      city: cityList.length > 0 ? cityList : defaultResponse.city,
+      age: ageList,
+      gender: genderList,
+      country: countryList,
+      city: cityList,
     };
   }
 
@@ -1252,15 +1232,7 @@ export class MetaService implements OnModuleInit {
     });
 
     if (snapshots.length === 0) {
-      const baseFollowers = 23500;
-      return [
-        { month: "Oct", followers: Math.round(baseFollowers * 0.05), engagement: 4.1 },
-        { month: "Nov", followers: Math.round(baseFollowers * 0.19), engagement: 5.5 },
-        { month: "Dec", followers: Math.round(baseFollowers * 0.39), engagement: 6.2 },
-        { month: "Jan", followers: Math.round(baseFollowers * 0.60), engagement: 7.8 },
-        { month: "Feb", followers: Math.round(baseFollowers * 0.79), engagement: 8.1 },
-        { month: "Mar", followers: baseFollowers, engagement: 8.9 },
-      ];
+      return [];
     }
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -1271,7 +1243,7 @@ export class MetaService implements OnModuleInit {
       return {
         month: label,
         followers: snap.followersCount,
-        engagement: 8.9,
+        engagement: 0,
       };
     });
   }
