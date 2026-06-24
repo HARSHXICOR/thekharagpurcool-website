@@ -30,7 +30,7 @@ export class CampaignsService {
       orderBy: { startDate: 'desc' },
       include: {
         organization: {
-          select: { id: true, name: true, slug: true },
+          select: { id: true, name: true, slug: true, industry: true },
         },
       },
     });
@@ -41,7 +41,7 @@ export class CampaignsService {
       where: { id },
       include: {
         organization: {
-          select: { id: true, name: true, slug: true },
+          select: { id: true, name: true, slug: true, industry: true },
         },
         deliverables: {
           where: { deletedAt: null },

@@ -38,8 +38,10 @@ type CampaignDetail = {
     id: string;
     name: string;
     slug: string;
+    industry?: string | null;
   };
   deliverables: Deliverable[];
+  metrics?: any[];
 };
 
 export function Dashboard() {
@@ -109,6 +111,7 @@ export function Dashboard() {
     const newOrgId = e.target.value;
     setSelectedOrgId(newOrgId);
     loadCreatorAnalytics(newOrgId);
+    loadClientCampaigns(newOrgId);
   };
 
   // Security guard
@@ -119,10 +122,12 @@ export function Dashboard() {
   }, [user, isLoading, router]);
 
   // Load Client Campaigns and deliverables details
-  const loadClientCampaigns = useCallback(async () => {
+  const loadClientCampaigns = useCallback(async (orgIdOverride?: string) => {
     setLoadingCampaigns(true);
     try {
-      const response = await fetchWithAuth("/api/admin/campaigns");
+      const orgId = orgIdOverride || selectedOrgId;
+      const url = orgId ? `/api/admin/campaigns?orgId=${orgId}` : "/api/admin/campaigns";
+      const response = await fetchWithAuth(url);
       if (!response.ok) {
         throw new Error("Failed to load campaigns.");
       }
@@ -145,7 +150,7 @@ export function Dashboard() {
     } finally {
       setLoadingCampaigns(false);
     }
-  }, [fetchWithAuth]);
+  }, [fetchWithAuth, selectedOrgId]);
 
   // Load live Meta/Instagram sync data
   const loadCreatorAnalytics = useCallback(async (orgIdOverride?: string) => {
@@ -393,44 +398,121 @@ export function Dashboard() {
 
   const COLORS = ["#a855f7", "#14b8a6", "#fbbf24", "#f472b6"];
 
-  const categoryImpact = [
-    {
-      title: "Automobile Promotions",
-      metric: "1.8M+ Views",
-      growth: "+280% Showroom Traffic",
-      details: "Cinematic test-drives, ride reels, and dealership walkthroughs for KIA, Suzuki, Jawa, Honda BigWing, Ather & Harley-Davidson.",
-      icon: Car,
-      color: "text-teal-400",
-      bgGlow: "rgba(20, 184, 166, 0.15)",
-    },
-    {
-      title: "Education Campaigns",
-      metric: "450K+ Reached",
-      growth: "+320 New Enrollments",
-      details: "Regional center launches, walk-throughs, student discount code promos, and motivational reels for Physics Wallah & Aakash Institute.",
-      icon: GraduationCap,
-      color: "text-yellow-400",
-      bgGlow: "rgba(250, 204, 21, 0.15)",
-    },
-    {
-      title: "Cafe & Restaurant Reviews",
-      metric: "920K+ Impressions",
-      growth: "+250% Weekend Footfall",
-      details: "Mouth-watering aesthetic food reviews, cafe ambiance tours, and customized coupon code activations for Swiggy, China Town & Bong Pizza.",
-      icon: Flame,
-      color: "text-orange-400",
-      bgGlow: "rgba(249, 115, 22, 0.15)",
-    },
-    {
-      title: "Local Retail & Lifestyle",
-      metric: "1.1M+ Reach",
-      growth: "+190% Seasonal Sales",
-      details: "Grand opening coverage, product showcase carousels, and festival shopping lookbooks for Apple Resellers, Mobile Bazar & Fashion Avenue.",
-      icon: ShoppingBag,
-      color: "text-pink-400",
-      bgGlow: "rgba(244, 114, 182, 0.15)",
-    },
-  ];
+  const getCategoryImpact = () => {
+    const categories = {
+      Automobile: {
+        title: "Automobile Promotions",
+        count: 0,
+        reach: 0,
+        impressions: 0,
+        footfall: 0,
+        icon: Car,
+        color: "text-teal-400",
+        bgGlow: "rgba(20, 184, 166, 0.15)",
+        details: "Cinematic test-drives, ride reels, and dealership walkthroughs for TVS, KIA, Suzuki, Jawa, Honda BigWing & Harley-Davidson."
+      },
+      Education: {
+        title: "Education Campaigns",
+        count: 0,
+        reach: 0,
+        impressions: 0,
+        footfall: 0,
+        icon: GraduationCap,
+        color: "text-yellow-400",
+        bgGlow: "rgba(250, 204, 21, 0.15)",
+        details: "Regional center launches, walk-throughs, student discount code promos, and motivational reels for Physics Wallah & Aakash Institute."
+      },
+      Food: {
+        title: "Cafe & Restaurant Reviews",
+        count: 0,
+        reach: 0,
+        impressions: 0,
+        footfall: 0,
+        icon: Flame,
+        color: "text-orange-400",
+        bgGlow: "rgba(249, 115, 22, 0.15)",
+        details: "Mouth-watering aesthetic food reviews, cafe ambiance tours, and customized coupon code activations for Swiggy, China Town & Bong Pizza."
+      },
+      Retail: {
+        title: "Local Retail & Lifestyle",
+        count: 0,
+        reach: 0,
+        impressions: 0,
+        footfall: 0,
+        icon: ShoppingBag,
+        color: "text-pink-400",
+        bgGlow: "rgba(244, 114, 182, 0.15)",
+        details: "Grand opening coverage, product showcase carousels, and festival shopping lookbooks for Apple Resellers, Mobile Bazar & Fashion Avenue."
+      }
+    };
+
+    activeCampaigns.forEach((campaign) => {
+      const industry = (campaign.organization?.industry || "").toLowerCase();
+      let catKey: keyof typeof categories = "Retail";
+      if (industry.includes("auto") || industry.includes("car") || industry.includes("bike")) {
+        catKey = "Automobile";
+      } else if (industry.includes("edu") || industry.includes("teach") || industry.includes("coaching") || industry.includes("school")) {
+        catKey = "Education";
+      } else if (industry.includes("restaurant") || industry.includes("cafe") || industry.includes("food") || industry.includes("beverage")) {
+        catKey = "Food";
+      }
+
+      categories[catKey].count += 1;
+
+      if (campaign.metrics && campaign.metrics.length > 0) {
+        campaign.metrics.forEach((metric: any) => {
+          categories[catKey].reach += metric.reach || 0;
+          categories[catKey].impressions += metric.impressions || 0;
+          categories[catKey].footfall += metric.footfallEstimate || 0;
+        });
+      }
+    });
+
+    return Object.values(categories).map((cat) => {
+      let metricLabel = `${cat.count} Campaign${cat.count !== 1 ? "s" : ""}`;
+      let growthLabel = "No active campaigns";
+
+      if (cat.count > 0) {
+        if (cat.reach > 0) {
+          metricLabel = `${formatNumber(cat.reach)} Reach`;
+        } else if (cat.impressions > 0) {
+          metricLabel = `${formatNumber(cat.impressions)} Impressions`;
+        }
+        
+        if (cat.footfall > 0) {
+          growthLabel = `+${Math.round(cat.footfall)} Visitors`;
+        } else {
+          growthLabel = `${cat.count} Active Collab${cat.count !== 1 ? "s" : ""}`;
+        }
+      } else {
+        if (cat.title.includes("Automobile")) {
+          metricLabel = "1.8M+ Views";
+          growthLabel = "+280% Showroom Traffic";
+        } else if (cat.title.includes("Education")) {
+          metricLabel = "450K+ Reached";
+          growthLabel = "+320 New Enrollments";
+        } else if (cat.title.includes("Cafe")) {
+          metricLabel = "920K+ Impressions";
+          growthLabel = "+250% Weekend Footfall";
+        } else {
+          metricLabel = "1.1M+ Reach";
+          growthLabel = "+190% Seasonal Sales";
+        }
+      }
+
+      return {
+        title: cat.title,
+        metric: metricLabel,
+        growth: growthLabel,
+        details: cat.details,
+        icon: cat.icon,
+        color: cat.color,
+        bgGlow: cat.bgGlow
+      };
+    });
+  };
+
+  const categoryImpact = getCategoryImpact();
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -462,7 +544,7 @@ export function Dashboard() {
     },
     {
       label: "Paid Collabs",
-      value: instagramAccount ? formatNumber(instagramAccount.mediaCount || 0) : "600+",
+      value: activeCampaigns.length > 0 ? activeCampaigns.length.toString() : (instagramAccount ? "0" : "600+"),
       change: instagramAccount ? "Live" : "+85%",
       icon: DollarSign,
       color: "text-yellow-400",
